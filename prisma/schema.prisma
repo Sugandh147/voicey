@@ -1,0 +1,50 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id         String   @id @default(cuid())
+  clerkId    String   @unique
+  email      String   @unique
+  plan       Plan     @default(FREE)
+  usageCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  voices     Voice[]
+  generations Generation[]
+}
+
+model Voice {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  r2Key       String?  // WAV file key in R2 (can be null for system voices seeded differently)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  generations Generation[]
+}
+
+model Generation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  text      String
+  voiceId   String
+  voice     Voice    @relation(fields: [voiceId], references: [id], onDelete: Cascade)
+  r2Key     String   // Generated audio key in R2
+  duration  Float?
+  createdAt DateTime @default(now())
+}
+
+enum Plan {
+  FREE
+  PRO
+}

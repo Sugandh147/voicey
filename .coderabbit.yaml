@@ -1,0 +1,15 @@
+# CodeRabbit Configuration File
+# For details, see: https://docs.coderabbit.ai/spec/configuration
+
+language: "en-US"
+tone: "professional"
+
+reviews:
+  profile: "chill"
+  request_reviews_by_default: true
+  high_level_summary: true
+  auto_react: true
+  collapse_discussions: true
+
+chat:
+  enabled: true
