@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -21,10 +21,12 @@ import { Progress } from "@/components/ui/progress";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import ProUpgradeModal from "@/components/ProUpgradeModal";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user } = useUser();
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   // Fetch plan and usage
   const { data: planData, isLoading: planLoading } = trpc.billing.getUserPlan.useQuery();
@@ -43,6 +45,10 @@ export default function DashboardPage() {
   });
 
   const handleUpgrade = () => {
+    setUpgradeModalOpen(true);
+  };
+
+  const handleRealCheckout = () => {
     const successUrl = window.location.origin;
     checkoutMutation.mutate({ successUrl });
   };
@@ -52,6 +58,13 @@ export default function DashboardPage() {
   const usagePercentage = usageLimit === Infinity ? 0 : Math.min((usageCount / usageLimit) * 100, 100);
 
   return (
+    <>
+    <ProUpgradeModal
+      open={upgradeModalOpen}
+      onClose={() => setUpgradeModalOpen(false)}
+      onRealCheckout={handleRealCheckout}
+      isCheckoutPending={checkoutMutation.isPending}
+    />
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-505">
       {/* Header Banner */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/95 border border-zinc-200/85 p-6 md:p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
@@ -270,5 +283,6 @@ export default function DashboardPage() {
         )}
       </div>
     </div>
+    </>
   );
 }

@@ -13,7 +13,7 @@ function verifyPolarWebhook(payload: string, signatureHeader: string, secret: st
       if (key === "v1") signature = value;
     }
     if (!timestamp || !signature) return false;
-    
+
     const signedPayload = `${timestamp}.${payload}`;
     const computedSignature = crypto
       .createHmac("sha256", secret)
@@ -21,7 +21,7 @@ function verifyPolarWebhook(payload: string, signatureHeader: string, secret: st
       .digest("hex");
 
     return crypto.timingSafeEqual(
-      Buffer.from(computedSignature, "utf-8"), 
+      Buffer.from(computedSignature, "utf-8"),
       Buffer.from(signature, "utf-8")
     );
   } catch (err) {
@@ -30,52 +30,86 @@ function verifyPolarWebhook(payload: string, signatureHeader: string, secret: st
   }
 }
 
+/** Extract clerkUserId from wherever Polar puts it in the event payload */
+function extractClerkUserId(body: any): string | null {
+  // Polar puts metadata in multiple places depending on event type
+  return (
+    body?.data?.metadata?.clerkUserId ||
+    body?.metadata?.clerkUserId ||
+    body?.data?.checkout?.metadata?.clerkUserId ||
+    body?.data?.customer_metadata?.clerkUserId ||
+    null
+  );
+}
+
+/** Determine if an event means the user should be on PRO */
+function resolveNewPlan(eventType: string, data: any): "PRO" | "FREE" | null {
+  switch (eventType) {
+    // Subscription events
+    case "subscription.created":
+    case "subscription.updated":
+      return data?.status === "active" ? "PRO" : "FREE";
+
+    case "subscription.revoked":
+    case "subscription.canceled":
+      return "FREE";
+
+    // Order / one-time purchase events (Polar fires these on checkout success)
+    case "order.created":
+      return data?.status === "paid" || data?.billing_reason === "purchase" ? "PRO" : null;
+
+    // Checkout completed
+    case "checkout.updated":
+      return data?.status === "succeeded" || data?.status === "confirmed" ? "PRO" : null;
+
+    default:
+      return null; // Ignore unknown events
+  }
+}
+
 export async function POST(req: NextRequest) {
   const payload = await req.text();
   const signature = req.headers.get("webhook-signature");
   const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
 
+  // ── Signature verification ──────────────────────────────────────────────
   if (webhookSecret && signature) {
     const isValid = verifyPolarWebhook(payload, signature, webhookSecret);
     if (!isValid) {
+      console.warn("Polar webhook: invalid signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
-  } else if (webhookSecret) {
-    // If webhook secret is defined but no signature is provided, reject it in production
+  } else if (webhookSecret && !signature) {
     if (process.env.NODE_ENV === "production") {
       return NextResponse.json({ error: "Missing signature header" }, { status: 400 });
     }
   }
 
+  // ── Parse & handle ──────────────────────────────────────────────────────
   try {
     const body = JSON.parse(payload);
-    const eventType = body.type;
-    const data = body.data;
-    
-    // Check metadata in data or root
-    const metadata = data?.metadata || body.metadata || {};
-    const clerkUserId = metadata.clerkUserId;
+    const eventType: string = body.type ?? "";
+    const data = body.data ?? {};
+
+    console.log(`📨 Polar webhook: ${eventType}`);
+
+    const clerkUserId = extractClerkUserId(body);
 
     if (!clerkUserId) {
-      console.warn("Polar webhook received but clerkUserId was missing in metadata:", eventType);
-      return NextResponse.json({ received: true, info: "No clerkUserId metadata" });
+      console.warn(`Polar webhook [${eventType}]: clerkUserId missing in metadata`);
+      return NextResponse.json({ received: true, info: "No clerkUserId — skipped" });
     }
 
-    if (eventType === "subscription.created" || eventType === "subscription.updated") {
-      const status = data.status;
-      const plan = status === "active" ? "PRO" : "FREE";
+    const newPlan = resolveNewPlan(eventType, data);
 
+    if (newPlan !== null) {
       await prisma.user.update({
         where: { clerkId: clerkUserId },
-        data: { plan },
+        data: { plan: newPlan },
       });
-      console.log(`Updated user ${clerkUserId} plan to ${plan} due to ${eventType}`);
-    } else if (eventType === "subscription.revoked") {
-      await prisma.user.update({
-        where: { clerkId: clerkUserId },
-        data: { plan: "FREE" },
-      });
-      console.log(`Updated user ${clerkUserId} plan to FREE due to subscription revocation`);
+      console.log(`✅ Updated user ${clerkUserId} → ${newPlan} (event: ${eventType})`);
+    } else {
+      console.log(`ℹ️  Polar webhook [${eventType}]: no plan change needed`);
     }
 
     return NextResponse.json({ received: true });

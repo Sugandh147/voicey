@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import ProUpgradeModal from "@/components/ProUpgradeModal";
 
 export default function DashboardLayout({
   children,
@@ -28,6 +29,7 @@ export default function DashboardLayout({
   const { isLoaded, isSignedIn } = useUser();
   const { openUserProfile, signOut } = useClerk();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
 
   // Fetch plan status to show badge and upgrades
   const { data: planData, isLoading: planLoading } = trpc.billing.getUserPlan.useQuery(undefined, {
@@ -46,7 +48,10 @@ export default function DashboardLayout({
   });
 
   const handleUpgrade = () => {
-    // Generate checkout link with current page as success URL
+    setUpgradeModalOpen(true);
+  };
+
+  const handleRealCheckout = () => {
     const successUrl = `${window.location.origin}/`;
     checkoutMutation.mutate({ successUrl });
   };
@@ -178,6 +183,13 @@ export default function DashboardLayout({
   );
 
   return (
+    <>
+    <ProUpgradeModal
+      open={upgradeModalOpen}
+      onClose={() => setUpgradeModalOpen(false)}
+      onRealCheckout={handleRealCheckout}
+      isCheckoutPending={checkoutMutation.isPending}
+    />
     <div className="flex min-h-screen bg-gradient-to-tr from-violet-50/40 via-zinc-50 to-indigo-50/40 text-zinc-800 overflow-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden md:block w-64 flex-shrink-0 h-screen">
@@ -225,5 +237,6 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+    </>
   );
 }

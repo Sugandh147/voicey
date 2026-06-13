@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../../trpc";
 import { createPolarCheckoutSession } from "@/lib/polar";
+import { prisma } from "@/lib/db";
 
 export const billingRouter = router({
   createCheckoutSession: protectedProcedure
@@ -42,10 +43,25 @@ export const billingRouter = router({
     }),
 
   getUserPlan: protectedProcedure.query(async ({ ctx }) => {
+    // Always re-fetch from DB so we get the latest plan after a webhook update
+    const freshUser = await prisma.user.findUnique({
+      where: { clerkId: ctx.userId! },
+    });
+    const plan = freshUser?.plan ?? ctx.dbUser.plan;
     return {
-      plan: ctx.dbUser.plan,
-      usageCount: ctx.dbUser.usageCount,
-      usageLimit: ctx.dbUser.plan === "PRO" ? Infinity : 10,
+      plan,
+      usageCount: freshUser?.usageCount ?? ctx.dbUser.usageCount,
+      usageLimit: plan === "PRO" ? Infinity : 10,
     };
+  }),
+
+  // Called by the success screen after a completed mock/real payment
+  // to immediately reflect PRO status without waiting for a webhook.
+  manualUpgradePro: protectedProcedure.mutation(async ({ ctx }) => {
+    const updated = await prisma.user.update({
+      where: { clerkId: ctx.userId! },
+      data: { plan: "PRO" },
+    });
+    return { plan: updated.plan };
   }),
 });
