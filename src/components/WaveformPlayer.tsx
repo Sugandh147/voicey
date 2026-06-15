@@ -9,6 +9,7 @@ function speakFallbackText(
   text: string,
   voiceName?: string,
   exaggeration: number = 0.5,
+  lang: string = "en",
   onEnd?: () => void,
   onError?: () => void
 ) {
@@ -17,13 +18,11 @@ function speakFallbackText(
   // Preprocess script text based on exaggeration to simulate emotional cadence
   let processedText = text;
   if (exaggeration > 0.75) {
-    // Inject ellipses to create dramatic/expressive pauses, and exclamation points
     processedText = text
       .replace(/(\. )/g, "... ")
       .replace(/(\!)/g, "!!! ")
       .replace(/(\?)/g, "!? ");
   } else if (exaggeration < 0.25) {
-    // Remove dramatic punctuation to sound monotone/flat
     processedText = text
       .replace(/[\!\?]/g, ".")
       .replace(/[\,\;\:]/g, " ");
@@ -32,68 +31,51 @@ function speakFallbackText(
   const utterance = new SpeechSynthesisUtterance(processedText);
   const voices = window.speechSynthesis.getVoices();
 
-  // Filter English voices
-  const englishVoices = voices.filter((v) => v.lang.startsWith("en"));
+  // Filter voices matching the target language
+  const languageVoices = voices.filter((v) => 
+    v.lang.toLowerCase() === lang.toLowerCase() ||
+    v.lang.toLowerCase().startsWith(lang.toLowerCase() + "-") ||
+    v.lang.toLowerCase().startsWith(lang.toLowerCase())
+  );
 
   const vn = voiceName ? voiceName.toLowerCase() : "";
   const isFemale = ["emily", "rachel", "bella", "sarah", "nicole", "freya", "sophie", "clara", "lily", "grace"].some(
     (n) => vn.includes(n)
   );
-  // george, nicole, arthur, daniel are targeted for UK/Hazel/Daniel accents if available
-  const isUK = ["nicole", "george", "arthur", "daniel"].some((n) => vn.includes(n));
 
   let selectedVoice = null;
-  if (isFemale) {
-    if (isUK) {
-      // Hazel is standard UK English female
-      selectedVoice = englishVoices.find(
+  if (languageVoices.length > 0) {
+    if (isFemale) {
+      selectedVoice = languageVoices.find(
         (v) =>
-          v.name.toLowerCase().includes("hazel") ||
-          (v.name.toLowerCase().includes("uk") && v.name.toLowerCase().includes("female")) ||
-          (v.name.toLowerCase().includes("gb") && v.name.toLowerCase().includes("female"))
-      );
-    }
-    if (!selectedVoice) {
-      selectedVoice = englishVoices.find(
-        (v) =>
-          v.name.toLowerCase().includes("zira") ||
-          v.name.toLowerCase().includes("samantha") ||
-          v.name.toLowerCase().includes("google us english") ||
           v.name.toLowerCase().includes("female") ||
-          v.name.toLowerCase().includes("susan")
-      );
+          v.name.toLowerCase().includes("google") ||
+          v.name.toLowerCase().includes("natural") ||
+          v.name.toLowerCase().includes("zira") ||
+          v.name.toLowerCase().includes("samantha")
+      ) || languageVoices[0];
+    } else {
+      selectedVoice = languageVoices.find(
+        (v) =>
+          v.name.toLowerCase().includes("male") ||
+          v.name.toLowerCase().includes("david") ||
+          v.name.toLowerCase().includes("mark")
+      ) || languageVoices[0];
     }
   } else {
-    if (isUK) {
-      // Daniel is standard UK English male
-      selectedVoice = englishVoices.find(
-        (v) =>
-          v.name.toLowerCase().includes("daniel") ||
-          (v.name.toLowerCase().includes("uk") && v.name.toLowerCase().includes("male")) ||
-          (v.name.toLowerCase().includes("gb") && v.name.toLowerCase().includes("male"))
-      );
+    // Default fallback to English voices
+    const englishVoices = voices.filter((v) => v.lang.startsWith("en"));
+    if (englishVoices.length > 0) {
+      selectedVoice = englishVoices[0];
     }
-    if (!selectedVoice) {
-      selectedVoice = englishVoices.find(
-        (v) =>
-          v.name.toLowerCase().includes("david") ||
-          v.name.toLowerCase().includes("mark") ||
-          v.name.toLowerCase().includes("google uk english male") ||
-          v.name.toLowerCase().includes("male")
-      );
-    }
-  }
-
-  // Fallback if no specific gender/accent voice was found
-  if (!selectedVoice && englishVoices.length > 0) {
-    selectedVoice = englishVoices[0];
   }
 
   if (selectedVoice) {
     utterance.voice = selectedVoice;
   }
+  utterance.lang = lang;
 
-  // Configure unique default pitch and speed rates for all 20 system voices
+  // Configure default pitch and speed rates
   let pitch = 1.0;
   let rate = 1.0;
 
@@ -124,7 +106,7 @@ function speakFallbackText(
       pitch = 1.08;
       rate = 0.96;
     } else if (vn.includes("lily")) {
-      pitch = 1.45; // Child
+      pitch = 1.45;
       rate = 1.05;
     } else if (vn.includes("grace")) {
       pitch = 0.92;
@@ -144,7 +126,7 @@ function speakFallbackText(
       pitch = 0.88;
       rate = 0.92;
     } else if (vn.includes("george")) {
-      pitch = 0.72; // Elderly man
+      pitch = 0.72;
       rate = 0.82;
     } else if (vn.includes("marcus")) {
       pitch = 0.80;
@@ -156,7 +138,7 @@ function speakFallbackText(
       pitch = 1.10;
       rate = 1.15;
     } else if (vn.includes("arthur")) {
-      pitch = 0.74; // Elderly man
+      pitch = 0.74;
       rate = 0.84;
     } else if (vn.includes("liam")) {
       pitch = 1.02;
@@ -165,13 +147,11 @@ function speakFallbackText(
   }
 
   // Exaggeration adjustments
-  // We double the exaggeration scale multiplier to make emotional changes more pronounced
   pitch = pitch + (exaggeration - 0.5) * 0.75;
   rate = rate + (exaggeration - 0.5) * 0.55;
 
   utterance.pitch = Math.max(0.5, Math.min(2.0, pitch));
   utterance.rate = Math.max(0.5, Math.min(2.0, rate));
-  // Volume increases with expression, lowers for flat monotone
   utterance.volume = exaggeration > 0.8 ? 1.0 : (exaggeration < 0.2 ? 0.75 : 0.9);
 
   if (onEnd) utterance.onend = onEnd;
@@ -185,11 +165,13 @@ export function WaveformPlayer({
   text,
   voiceName,
   exaggeration = 0.5,
+  lang = "en",
 }: {
   src: string;
   text?: string;
   voiceName?: string;
   exaggeration?: number;
+  lang?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -205,11 +187,14 @@ export function WaveformPlayer({
     setIsPlaying(false);
     window.speechSynthesis.cancel();
 
+    // Check if system is in dark mode to configure WaveSurfer colors
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+
     const ws = WaveSurfer.create({
       container: containerRef.current,
-      waveColor: "#cbd5e1", // light slate-300
-      progressColor: "#7c3aed", // violet-600
-      cursorColor: "#a78bfa", // violet-400
+      waveColor: isDark ? "#3f3f46" : "#cbd5e1", // zinc-700 in dark, slate-300 in light
+      progressColor: "#7c3aed",
+      cursorColor: "#a78bfa",
       barWidth: 2,
       barGap: 3,
       barRadius: 2,
@@ -230,12 +215,13 @@ export function WaveformPlayer({
       setCurrentTime(0);
       setIsReady(true);
 
-      // If it is demo fallback, trigger local TTS read aloud
+      // If it is demo fallback, trigger local SpeechSynthesis read aloud
       if (src.includes("demo-fallback-key") && text) {
         speakFallbackText(
           text,
           voiceName,
           exaggeration,
+          lang,
           () => {
             setIsPlaying(false);
             ws.pause();
@@ -260,7 +246,7 @@ export function WaveformPlayer({
       window.speechSynthesis.cancel();
       ws.destroy();
     };
-  }, [src, text, voiceName, exaggeration]);
+  }, [src, text, voiceName, exaggeration, lang]);
 
   const togglePlay = () => {
     if (src.includes("demo-fallback-key") && text) {
@@ -275,6 +261,7 @@ export function WaveformPlayer({
           text,
           voiceName,
           exaggeration,
+          lang,
           () => {
             setIsPlaying(false);
             if (wavesurferRef.current) {
@@ -316,7 +303,7 @@ export function WaveformPlayer({
   };
 
   return (
-    <div className="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col space-y-3 w-full shadow-xs hover:shadow-sm transition-shadow relative overflow-hidden">
+    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex flex-col space-y-3 w-full shadow-xs hover:shadow-sm transition-shadow relative overflow-hidden">
       {/* Soundwave active visualizer */}
       {isPlaying && (
         <div className="absolute right-4 top-2 flex items-end gap-0.5 h-3.5 w-6 select-none opacity-85 z-20">
@@ -328,9 +315,9 @@ export function WaveformPlayer({
       )}
 
       {!isReady && (
-        <div className="absolute inset-0 bg-white/75 backdrop-blur-xs flex items-center justify-center gap-2 z-10">
-          <Loader2 className="h-4 w-4 animate-spin text-violet-600" />
-          <span className="text-xs font-semibold text-zinc-500">Loading audio track...</span>
+        <div className="absolute inset-0 bg-white/75 dark:bg-zinc-900/75 backdrop-blur-xs flex items-center justify-center gap-2 z-10">
+          <Loader2 className="h-4 w-4 animate-spin text-violet-600 dark:text-violet-500" />
+          <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">Loading audio track...</span>
         </div>
       )}
 
@@ -355,7 +342,7 @@ export function WaveformPlayer({
             onClick={toggleMute}
             variant="ghost"
             size="icon"
-            className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 h-9 w-9 transition-colors duration-200"
+            className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 w-9 transition-colors duration-200"
           >
             {isMuted ? (
               <VolumeX className="h-4.5 w-4.5" />
@@ -364,11 +351,11 @@ export function WaveformPlayer({
             )}
           </Button>
 
-          <a href={src} download="voicey-generation.wav">
+          <a href={src} download="voicey-generation.mp3">
             <Button
               variant="ghost"
               size="icon"
-              className="text-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 h-9 w-9 transition-colors duration-200"
+              className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 w-9 transition-colors duration-200"
             >
               <Download className="h-4.5 w-4.5" />
             </Button>
@@ -376,7 +363,7 @@ export function WaveformPlayer({
         </div>
       </div>
 
-      <div className="flex justify-between text-[10px] text-zinc-500 font-bold tracking-wider px-1">
+      <div className="flex justify-between text-[10px] text-zinc-500 dark:text-zinc-455 font-bold tracking-wider px-1">
         <span>{formatTime(currentTime)}</span>
         <span>{formatTime(duration)}</span>
       </div>

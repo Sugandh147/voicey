@@ -22,14 +22,14 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" className="dark">
+      <html lang="en" suppressHydrationWarning>
         <body
-          className={`${inter.variable} font-sans bg-zinc-950 text-zinc-50 antialiased`}
+          className={`${inter.variable} font-sans bg-background text-foreground antialiased`}
         >
           <Providers>
             {children}
           </Providers>
-          <Toaster theme="dark" position="bottom-right" />
+          <Toaster position="bottom-right" />
         </body>
       </html>
     </ClerkProvider>

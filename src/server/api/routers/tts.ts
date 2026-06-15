@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../../trpc";
 import { generateSpeechFromModal } from "@/lib/modal";
 import { uploadToR2, getPresignedDownloadUrl } from "@/lib/r2";
+import fs from "fs";
+import path from "path";
 
 export const ttsRouter = router({
   generateSpeech: protectedProcedure
@@ -11,10 +13,11 @@ export const ttsRouter = router({
         text: z.string().min(1),
         voiceId: z.string(),
         exaggeration: z.number().min(0).max(1).default(0.5),
+        targetLang: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { text, voiceId, exaggeration } = input;
+      const { text, voiceId, exaggeration, targetLang } = input;
       const user = ctx.dbUser;
 
       // Plan limits check
@@ -54,6 +57,23 @@ export const ttsRouter = router({
         });
       }
 
+      // Translation step
+      let translatedText = text;
+      if (targetLang && targetLang !== "en") {
+        try {
+          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data[0]) {
+              translatedText = data[0].map((item: any) => item[0] || "").join("").trim();
+            }
+          }
+        } catch (error) {
+          console.error("Translation helper failed in generateSpeech:", error);
+        }
+      }
+
       // If voice has an R2 key (cloned voice), get download url
       let voiceSampleUrl: string | undefined = undefined;
       const isConfigured = !!process.env.CLOUDFLARE_R2_BUCKET && !!process.env.MODAL_GENERATION_URL;
@@ -71,19 +91,43 @@ export const ttsRouter = router({
         let audioUrl = "";
         let duration = 5.0;
         const generationId = crypto.randomUUID();
-        const r2Key = `generations/${user.id}/${generationId}.wav`;
+        const r2Key = `demo-generations/${generationId}.mp3`;
 
         if (!isConfigured) {
-          console.warn("⚠️ Voicey running in Demo mode: MODAL_GENERATION_URL or R2 keys are not configured. Using same-origin audio proxy.");
-          // Use our same-origin audio proxy to prevent CORS blocks
-          audioUrl = `/api/audio/demo-fallback-key`;
-          duration = 10.0;
+          console.warn("⚠️ Voicey running in Demo mode: Fetching Google Translate TTS for audio generation.");
+          const lang = targetLang || "en";
+          const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(translatedText)}`;
+          const response = await fetch(googleTtsUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Google Translate TTS returned status: ${response.status}`);
+          }
+
+          const arrayBuffer = await response.arrayBuffer();
+          const audioBuffer = Buffer.from(arrayBuffer);
+
+          // Write file to local cached directory
+          const dir = path.join(process.cwd(), "public", "demo-generations");
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          const filePath = path.join(dir, `${generationId}.mp3`);
+          fs.writeFileSync(filePath, audioBuffer);
+
+          audioUrl = `/api/audio/${r2Key}`;
+          const wordCount = translatedText.split(/\s+/).length;
+          duration = Math.max(2.0, Math.round((wordCount / 2.5) * 10) / 10);
         } else {
-          // Generate audio from Modal
-          const audioBuffer = await generateSpeechFromModal(text, voiceSampleUrl, exaggeration);
+          // Generate audio from Modal (zero-shot TTS)
+          const audioBuffer = await generateSpeechFromModal(translatedText, voiceSampleUrl, exaggeration);
 
           // Upload to R2
-          audioUrl = await uploadToR2(r2Key, audioBuffer, "audio/wav");
+          const r2RealKey = `generations/${user.id}/${generationId}.wav`;
+          audioUrl = await uploadToR2(r2RealKey, audioBuffer, "audio/wav");
           duration = Math.round((audioBuffer.length / 32000) * 10) / 10;
         }
 
@@ -91,10 +135,11 @@ export const ttsRouter = router({
           data: {
             id: generationId,
             userId: user.id,
-            text,
+            text: translatedText,
             voiceId,
-            r2Key: isConfigured ? r2Key : "demo-fallback-key",
+            r2Key: isConfigured ? `generations/${user.id}/${generationId}.wav` : r2Key,
             duration,
+            targetLang: targetLang || "en",
           },
         });
 

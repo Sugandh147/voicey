@@ -67,16 +67,16 @@ export default function DashboardPage() {
     />
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-505">
       {/* Header Banner */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/95 border border-zinc-200/85 p-6 md:p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/85 dark:border-zinc-800 p-6 md:p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
         {/* Subtle decorative glow */}
-        <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-violet-200/40 blur-3xl animate-pulse" />
-        <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-fuchsia-200/30 blur-3xl" />
+        <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-violet-200/40 dark:bg-violet-900/20 blur-3xl animate-pulse" />
+        <div className="absolute -left-20 -bottom-20 h-40 w-40 rounded-full bg-fuchsia-200/30 dark:bg-fuchsia-900/15 blur-3xl" />
         
         <div className="space-y-2 relative z-10">
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-850">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-850 dark:text-zinc-100">
             Hello, <span className="bg-gradient-to-r from-violet-600 to-fuchsia-600 bg-clip-text text-transparent">{user?.firstName || "Creator"}</span> 👋
           </h1>
-          <p className="text-zinc-500 text-sm max-w-lg font-medium leading-relaxed">
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm max-w-lg font-medium leading-relaxed">
             Welcome to your self-hosted AI voice workstation. Synthesize realistic voice synthesis and manage custom voice clones.
           </p>
         </div>
@@ -88,8 +88,8 @@ export default function DashboardPage() {
             </Button>
           </Link>
           <Link href="/voices">
-            <Button variant="outline" className="border-zinc-250 bg-white hover:bg-zinc-50 text-zinc-650 hover:text-zinc-850 font-semibold gap-1.5 h-10 px-4 active:scale-98 transition-all duration-300">
-              <Mic className="h-4.5 w-4.5 text-zinc-500" />
+            <Button variant="outline" className="border-zinc-250 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-650 dark:text-zinc-300 hover:text-zinc-850 dark:hover:text-zinc-100 font-semibold gap-1.5 h-10 px-4 active:scale-98 transition-all duration-300">
+              <Mic className="h-4.5 w-4.5 text-zinc-500 dark:text-zinc-450" />
               Clone Voice
             </Button>
           </Link>
@@ -99,9 +99,9 @@ export default function DashboardPage() {
       {/* Main Stats Grid */}
       <div className="grid md:grid-cols-3 gap-6">
         {/* Usage Card */}
-        <Card className="col-span-1 md:col-span-2 bg-white/90 border-zinc-200/85 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-350">
+        <Card className="col-span-1 md:col-span-2 bg-white/90 dark:bg-zinc-900/90 border-zinc-200/85 dark:border-zinc-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-350">
           <CardHeader className="pb-3">
-            <CardTitle className="text-xs font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-2">
+            <CardTitle className="text-xs font-bold text-zinc-500 dark:text-zinc-400 tracking-wider uppercase flex items-center gap-2">
               <TrendingUp className="h-4.5 w-4.5 text-violet-500 animate-float" />
               Usage Progress
             </CardTitle>
@@ -109,26 +109,26 @@ export default function DashboardPage() {
           <CardContent className="space-y-4">
             {planLoading ? (
               <div className="space-y-3">
-                <Skeleton className="h-4 w-1/3 bg-zinc-200" />
-                <Skeleton className="h-6 w-full bg-zinc-200" />
+                <Skeleton className="h-4 w-1/3 bg-zinc-200 dark:bg-zinc-800" />
+                <Skeleton className="h-6 w-full bg-zinc-200 dark:bg-zinc-800" />
               </div>
             ) : (
               <>
                 <div className="flex justify-between items-end">
                   <div>
-                    <span className="text-3xl font-black text-zinc-850">{usageCount}</span>
-                    <span className="text-zinc-450 font-bold ml-1">
+                    <span className="text-3xl font-black text-zinc-850 dark:text-zinc-100">{usageCount}</span>
+                    <span className="text-zinc-450 dark:text-zinc-550 font-bold ml-1">
                       / {usageLimit === Infinity ? "Unlimited" : `${usageLimit} generations`}
                     </span>
                   </div>
-                  <span className="text-xs text-violet-650 bg-violet-50 px-2.5 py-0.5 rounded-full font-extrabold border border-violet-100">
+                  <span className="text-xs text-violet-650 dark:text-violet-350 bg-violet-50 dark:bg-violet-950/45 px-2.5 py-0.5 rounded-full font-extrabold border border-violet-100 dark:border-violet-900">
                     {planData?.plan} Plan
                   </span>
                 </div>
                 {usageLimit !== Infinity && (
                   <div className="space-y-2.5">
-                    <Progress value={usagePercentage} className="h-2.5 bg-zinc-100 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-fuchsia-500" />
-                    <div className="flex justify-between text-[10px] text-zinc-450 font-bold">
+                    <Progress value={usagePercentage} className="h-2.5 bg-zinc-100 dark:bg-zinc-800 [&>div]:bg-gradient-to-r [&>div]:from-violet-600 [&>div]:to-fuchsia-500" />
+                    <div className="flex justify-between text-[10px] text-zinc-450 dark:text-zinc-500 font-bold">
                       <span>{Math.round(usagePercentage)}% used</span>
                       <span>{usageLimit - usageCount} remaining</span>
                     </div>
@@ -138,9 +138,9 @@ export default function DashboardPage() {
             )}
           </CardContent>
           {planData?.plan === "FREE" && (
-            <CardFooter className="border-t border-zinc-150 pt-4 mt-2">
+            <CardFooter className="border-t border-zinc-150 dark:border-zinc-800 pt-4 mt-2">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 w-full">
-                <span className="text-xs text-zinc-500 font-medium">Upgrade to Pro for unlimited generation usage limit.</span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Upgrade to Pro for unlimited generation usage limit.</span>
                 <Button 
                   onClick={handleUpgrade}
                   disabled={checkoutMutation.isPending}
@@ -162,31 +162,31 @@ export default function DashboardPage() {
         </Card>
 
         {/* Quick Insights */}
-        <Card className="bg-white/90 border-zinc-200/85 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-350 flex flex-col justify-between">
+        <Card className="bg-white/90 dark:bg-zinc-900/90 border-zinc-200/85 dark:border-zinc-805 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-350 flex flex-col justify-between">
           <CardHeader className="pb-3">
-            <CardTitle className="text-xs font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-2">
+            <CardTitle className="text-xs font-bold text-zinc-500 dark:text-zinc-400 tracking-wider uppercase flex items-center gap-2">
               <Cpu className="h-4.5 w-4.5 text-fuchsia-500" />
               AI Inference Node
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-xs text-zinc-500 space-y-3.5 leading-relaxed font-medium">
+          <CardContent className="text-xs text-zinc-550 dark:text-zinc-400 space-y-3.5 leading-relaxed font-medium">
             <p>
-              Inference is handled serverless on Modal with <strong className="text-zinc-800 font-bold">A10G GPU acceleration</strong>. 
+              Inference is handled serverless on Modal with <strong className="text-zinc-800 dark:text-zinc-200 font-bold">A10G GPU acceleration</strong>. 
             </p>
-            <div className="flex items-center gap-2.5 bg-zinc-50 p-2.5 border border-zinc-150 rounded-lg animate-pulse-glow">
+            <div className="flex items-center gap-2.5 bg-zinc-50 dark:bg-zinc-800/40 p-2.5 border border-zinc-150 dark:border-zinc-800 rounded-lg animate-pulse-glow">
               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
               <div>
-                <p className="font-bold text-zinc-850">Chatterbox TTS</p>
-                <p className="text-[10px] text-zinc-450 font-bold">Latency: ~200ms</p>
+                <p className="font-bold text-zinc-850 dark:text-zinc-200">Chatterbox TTS</p>
+                <p className="text-[10px] text-zinc-450 dark:text-zinc-500 font-bold">Latency: ~200ms</p>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="border-t border-zinc-150 pt-4">
+          <CardFooter className="border-t border-zinc-150 dark:border-zinc-800 pt-4">
             <a 
               href="https://github.com/resemble-ai/chatterbox" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-xs text-violet-600 hover:text-violet-500 font-bold inline-flex items-center gap-1 transition-all"
+              className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-500 font-bold inline-flex items-center gap-1 transition-all"
             >
               Open Chatterbox GitHub
               <ArrowRight className="h-3.5 w-3.5" />
@@ -196,31 +196,31 @@ export default function DashboardPage() {
       </div>
 
       {/* Model Tech Pipeline */}
-      <div className="bg-white/40 border border-zinc-200/80 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-        <h3 className="text-sm font-bold text-zinc-700 mb-6 flex items-center gap-2 relative z-10">
+      <div className="bg-white/40 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-6 shadow-xs relative overflow-hidden">
+        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-6 flex items-center gap-2 relative z-10">
           <Layers className="h-4.5 w-4.5 text-violet-500" />
           The Voicey Processing Pipeline
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center relative z-10">
-          <div className="bg-white border border-zinc-150 hover:border-violet-300 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 uppercase tracking-widest">Step 1</div>
-            <div className="font-extrabold text-zinc-850 text-sm">Text Input</div>
-            <div className="text-[10px] text-zinc-450 font-medium">Form validation and sanitization</div>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 1</div>
+            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Text Input</div>
+            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Form validation and sanitization</div>
           </div>
-          <div className="bg-white border border-zinc-150 hover:border-violet-300 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 uppercase tracking-widest">Step 2</div>
-            <div className="font-extrabold text-zinc-850 text-sm">Preprocessing</div>
-            <div className="text-[10px] text-zinc-450 font-medium">Syntactic analysis and normalization</div>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 2</div>
+            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Preprocessing</div>
+            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Syntactic analysis and normalization</div>
           </div>
-          <div className="bg-white border border-zinc-150 hover:border-violet-300 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 uppercase tracking-widest">Step 3</div>
-            <div className="font-extrabold text-zinc-850 text-sm">Chatterbox GPU</div>
-            <div className="text-[10px] text-zinc-450 font-medium">Modal container synthesizes audio</div>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 3</div>
+            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Chatterbox GPU</div>
+            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Modal container synthesizes audio</div>
           </div>
-          <div className="bg-white border border-zinc-150 hover:border-violet-300 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 uppercase tracking-widest">Step 4</div>
-            <div className="font-extrabold text-zinc-850 text-sm">Waveform Synthesis</div>
-            <div className="text-[10px] text-zinc-450 font-medium">Audio playback & WAV streaming</div>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
+            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 4</div>
+            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Waveform Synthesis</div>
+            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Audio playback & WAV streaming</div>
           </div>
         </div>
       </div>
@@ -228,12 +228,12 @@ export default function DashboardPage() {
       {/* Recent Activity */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-lg font-bold tracking-tight text-zinc-850 flex items-center gap-2">
-            <History className="h-4.5 w-4.5 text-zinc-500 animate-float" />
+          <h2 className="text-lg font-bold tracking-tight text-zinc-850 dark:text-zinc-100 flex items-center gap-2">
+            <History className="h-4.5 w-4.5 text-zinc-500 dark:text-zinc-400 animate-float" />
             Recent Generations
           </h2>
           {generations && generations.length > 0 && (
-            <Link href="/text-to-speech" className="text-xs text-violet-650 hover:text-violet-500 font-extrabold inline-flex items-center gap-0.5 transition-colors duration-200">
+            <Link href="/text-to-speech" className="text-xs text-violet-650 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 font-extrabold inline-flex items-center gap-0.5 transition-colors duration-200">
               View History
               <ArrowRight className="h-3 w-3" />
             </Link>
@@ -242,29 +242,29 @@ export default function DashboardPage() {
 
         {genLoading ? (
           <div className="space-y-3">
-            <Skeleton className="h-16 w-full bg-zinc-200/60 animate-pulse" />
-            <Skeleton className="h-16 w-full bg-zinc-200/60 animate-pulse" />
+            <Skeleton className="h-16 w-full bg-zinc-200/60 dark:bg-zinc-800/60 animate-pulse" />
+            <Skeleton className="h-16 w-full bg-zinc-200/60 dark:bg-zinc-800/60 animate-pulse" />
           </div>
         ) : generations && generations.length > 0 ? (
           <div className="grid gap-3">
             {generations.slice(0, 3).map((gen) => (
               <div 
                 key={gen.id}
-                className="flex justify-between items-center p-4 bg-white/95 border border-zinc-200/85 hover:border-violet-250 hover:shadow-xs rounded-xl shadow-xs transition-all duration-300 hover:translate-x-0.5"
+                className="flex justify-between items-center p-4 bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/85 dark:border-zinc-800 hover:border-violet-250 dark:hover:border-violet-850 hover:shadow-xs rounded-xl shadow-xs transition-all duration-300 hover:translate-x-0.5"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="h-9 w-9 rounded-lg bg-zinc-50 flex items-center justify-center text-zinc-500 flex-shrink-0 border border-zinc-150">
-                    <Volume2 className="h-4.5 w-4.5 text-zinc-500 animate-float" />
+                  <div className="h-9 w-9 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400 flex-shrink-0 border border-zinc-150 dark:border-zinc-800">
+                    <Volume2 className="h-4.5 w-4.5 text-zinc-500 dark:text-zinc-400 animate-float" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold truncate text-zinc-850 pr-4">"{gen.text}"</p>
-                    <p className="text-[10px] text-zinc-550 font-bold">
-                      Voice: <strong className="text-zinc-700 font-bold">{gen.voice?.name || "Deleted"}</strong> • {new Date(gen.createdAt).toLocaleDateString()}
+                    <p className="text-sm font-bold truncate text-zinc-850 dark:text-zinc-200 pr-4">"{gen.text}"</p>
+                    <p className="text-[10px] text-zinc-550 dark:text-zinc-450 font-bold">
+                      Voice: <strong className="text-zinc-700 dark:text-zinc-300 font-bold">{gen.voice?.name || "Deleted"}</strong> • {new Date(gen.createdAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
                 {gen.duration && (
-                  <span className="text-xs text-zinc-500 bg-zinc-50 px-2.5 py-0.5 rounded-full border border-zinc-200/60 font-bold flex-shrink-0 shadow-2xs">
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 px-2.5 py-0.5 rounded-full border border-zinc-200/60 dark:border-zinc-800/60 font-bold flex-shrink-0 shadow-2xs">
                     {gen.duration}s
                   </span>
                 )}
@@ -272,10 +272,10 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 bg-white/40 border border-dashed border-zinc-200 rounded-xl text-center shadow-2xs">
-            <p className="text-sm text-zinc-500 mb-4 font-medium">No speech generations yet. Write some text to get started.</p>
+          <div className="flex flex-col items-center justify-center p-8 bg-white/40 dark:bg-zinc-900/40 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl text-center shadow-2xs">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-4 font-medium">No speech generations yet. Write some text to get started.</p>
             <Link href="/text-to-speech">
-              <Button size="sm" className="bg-zinc-800 hover:bg-zinc-750 text-zinc-200 hover:text-white font-semibold border border-zinc-700 h-9 active:scale-95 transition-all">
+              <Button size="sm" className="bg-zinc-800 dark:bg-zinc-700 hover:bg-zinc-750 dark:hover:bg-zinc-600 text-zinc-200 dark:text-zinc-100 hover:text-white font-semibold border border-zinc-700 dark:border-zinc-600 h-9 active:scale-95 transition-all">
                 Generate First Audio
               </Button>
             </Link>

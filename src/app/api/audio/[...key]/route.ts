@@ -55,6 +55,21 @@ export async function GET(
   const r2Key = key.join("/");
 
   try {
+    if (r2Key.startsWith("demo-generations/")) {
+      const fs = require("fs");
+      const path = require("path");
+      const filePath = path.join(process.cwd(), "public", r2Key);
+      if (fs.existsSync(filePath)) {
+        const fileBuffer = fs.readFileSync(filePath);
+        return new Response(new Uint8Array(fileBuffer), {
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "Cache-Control": "public, max-age=31536000, immutable",
+          },
+        });
+      }
+    }
+
     const isDemoKey = r2Key === "demo-fallback-key" || r2Key.startsWith("demo-voice-key-");
     
     if (isDemoKey) {

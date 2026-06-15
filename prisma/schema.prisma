@@ -19,6 +19,7 @@ model User {
   createdAt  DateTime @default(now())
   voices     Voice[]
   generations Generation[]
+  translations Translation[]
 }
 
 model Voice {
@@ -41,7 +42,19 @@ model Generation {
   voice     Voice    @relation(fields: [voiceId], references: [id], onDelete: Cascade)
   r2Key     String   // Generated audio key in R2
   duration  Float?
+  targetLang String?
   createdAt DateTime @default(now())
+}
+
+model Translation {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceText  String
+  sourceLang  String
+  targetText  String
+  targetLang  String
+  createdAt   DateTime @default(now())
 }
 
 enum Plan {
