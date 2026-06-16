@@ -51,3 +51,7 @@ next-env.d.ts
 *.db-wal
 *.db-shm
 
+# generated assets
+/public/demo-generations/
+
+

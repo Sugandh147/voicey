@@ -43,6 +43,7 @@ model Generation {
   r2Key     String   // Generated audio key in R2
   duration  Float?
   targetLang String?
+  tone      String?
   createdAt DateTime @default(now())
 }
 

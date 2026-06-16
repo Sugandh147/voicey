@@ -14,10 +14,11 @@ export const ttsRouter = router({
         voiceId: z.string(),
         exaggeration: z.number().min(0).max(1).default(0.5),
         targetLang: z.string().optional(),
+        tone: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { text, voiceId, exaggeration, targetLang } = input;
+      const { text, voiceId, exaggeration, targetLang, tone } = input;
       const user = ctx.dbUser;
 
       // Plan limits check
@@ -96,19 +97,47 @@ export const ttsRouter = router({
         if (!isConfigured) {
           console.warn("⚠️ Voicey running in Demo mode: Fetching Google Translate TTS for audio generation.");
           const lang = targetLang || "en";
-          const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(translatedText)}`;
-          const response = await fetch(googleTtsUrl, {
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+          // Google Translate TTS has a limit of 200 characters. We chunk the text if it is longer.
+          const maxTtsLength = 200;
+          const textChunks: string[] = [];
+          
+          if (translatedText.length <= maxTtsLength) {
+            textChunks.push(translatedText);
+          } else {
+            const words = translatedText.split(/\s+/);
+            let currentChunk = "";
+            for (const word of words) {
+              if ((currentChunk + " " + word).trim().length > maxTtsLength) {
+                if (currentChunk) textChunks.push(currentChunk.trim());
+                currentChunk = word;
+              } else {
+                currentChunk = (currentChunk + " " + word).trim();
+              }
             }
-          });
-
-          if (!response.ok) {
-            throw new Error(`Google Translate TTS returned status: ${response.status}`);
+            if (currentChunk) {
+              textChunks.push(currentChunk.trim());
+            }
           }
 
-          const arrayBuffer = await response.arrayBuffer();
-          const audioBuffer = Buffer.from(arrayBuffer);
+          const audioBuffers: Buffer[] = [];
+          for (const chunk of textChunks) {
+            if (!chunk) continue;
+            const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
+            const response = await fetch(googleTtsUrl, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+              }
+            });
+
+            if (!response.ok) {
+              throw new Error(`Google Translate TTS returned status: ${response.status} for chunk: ${chunk}`);
+            }
+
+            const arrayBuffer = await response.arrayBuffer();
+            audioBuffers.push(Buffer.from(arrayBuffer));
+          }
+
+          const audioBuffer = Buffer.concat(audioBuffers);
 
           // Write file to local cached directory
           const dir = path.join(process.cwd(), "public", "demo-generations");
@@ -140,6 +169,7 @@ export const ttsRouter = router({
             r2Key: isConfigured ? `generations/${user.id}/${generationId}.wav` : r2Key,
             duration,
             targetLang: targetLang || "en",
+            tone: tone || "podcast",
           },
         });
 

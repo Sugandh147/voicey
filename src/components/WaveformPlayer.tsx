@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
-import { Play, Pause, Download, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { Play, Pause, Download, Volume2, VolumeX, Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "./ui/button";
 
 function speakFallbackText(
@@ -10,6 +10,7 @@ function speakFallbackText(
   voiceName?: string,
   exaggeration: number = 0.5,
   lang: string = "en",
+  tone?: string,
   onEnd?: () => void,
   onError?: () => void
 ) {
@@ -146,6 +147,18 @@ function speakFallbackText(
     }
   }
 
+  // Tone adjustments
+  if (tone === "cinematic") {
+    pitch = pitch * 0.82; // deeper, dramatic voice
+    rate = rate * 0.82;   // slower, theatrical pauses
+  } else if (tone === "documentary") {
+    pitch = pitch * 0.95; // steady and formal
+    rate = rate * 0.92;   // structured documentary pacing
+  } else if (tone === "podcast") {
+    pitch = pitch * 1.05; // bright, engaging
+    rate = rate * 1.08;   // lively and conversational
+  }
+
   // Exaggeration adjustments
   pitch = pitch + (exaggeration - 0.5) * 0.75;
   rate = rate + (exaggeration - 0.5) * 0.55;
@@ -166,12 +179,14 @@ export function WaveformPlayer({
   voiceName,
   exaggeration = 0.5,
   lang = "en",
+  tone,
 }: {
   src: string;
   text?: string;
   voiceName?: string;
   exaggeration?: number;
   lang?: string;
+  tone?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -180,6 +195,7 @@ export function WaveformPlayer({
   const [isReady, setIsReady] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [showDurationBar, setShowDurationBar] = useState(true);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -222,6 +238,7 @@ export function WaveformPlayer({
           voiceName,
           exaggeration,
           lang,
+          tone,
           () => {
             setIsPlaying(false);
             ws.pause();
@@ -246,7 +263,7 @@ export function WaveformPlayer({
       window.speechSynthesis.cancel();
       ws.destroy();
     };
-  }, [src, text, voiceName, exaggeration, lang]);
+  }, [src, text, voiceName, exaggeration, lang, tone]);
 
   const togglePlay = () => {
     if (src.includes("demo-fallback-key") && text) {
@@ -262,6 +279,7 @@ export function WaveformPlayer({
           voiceName,
           exaggeration,
           lang,
+          tone,
           () => {
             setIsPlaying(false);
             if (wavesurferRef.current) {
@@ -335,9 +353,31 @@ export function WaveformPlayer({
           )}
         </Button>
 
-        <div ref={containerRef} className="flex-1 min-w-0" />
+        <div ref={containerRef} className={`flex-1 min-w-0 ${showDurationBar ? "" : "hidden"}`} />
+
+        {!showDurationBar && (
+          <div className="flex-1 text-center text-xs font-bold text-zinc-550 dark:text-zinc-500 select-none animate-in fade-in duration-200 bg-zinc-50/50 dark:bg-zinc-950/20 py-2 rounded-lg border border-dashed border-zinc-200 dark:border-zinc-850">
+            Waveform hidden • {formatTime(currentTime)} / {formatTime(duration)}
+          </div>
+        )}
 
         <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            onClick={() => setShowDurationBar((prev) => !prev)}
+            variant="ghost"
+            size="icon"
+            className={`text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 w-9 transition-all duration-200 ${
+              !showDurationBar ? "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-955/25" : ""
+            }`}
+            title={showDurationBar ? "Hide waveform timeline" : "Show waveform timeline"}
+          >
+            {showDurationBar ? (
+              <Minimize2 className="h-4.5 w-4.5" />
+            ) : (
+              <Maximize2 className="h-4.5 w-4.5" />
+            )}
+          </Button>
+
           <Button
             onClick={toggleMute}
             variant="ghost"
@@ -363,10 +403,12 @@ export function WaveformPlayer({
         </div>
       </div>
 
-      <div className="flex justify-between text-[10px] text-zinc-500 dark:text-zinc-455 font-bold tracking-wider px-1">
-        <span>{formatTime(currentTime)}</span>
-        <span>{formatTime(duration)}</span>
-      </div>
+      {showDurationBar && (
+        <div className="flex justify-between text-[10px] text-zinc-500 dark:text-zinc-455 font-bold tracking-wider px-1 animate-in slide-in-from-top-1 duration-200">
+          <span>{formatTime(currentTime)}</span>
+          <span>{formatTime(duration)}</span>
+        </div>
+      )}
     </div>
   );
 }

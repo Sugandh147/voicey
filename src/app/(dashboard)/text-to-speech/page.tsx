@@ -82,12 +82,14 @@ export default function TextToSpeechPage() {
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [exaggeration, setExaggeration] = useState(0.5);
   const [targetLang, setTargetLang] = useState("en");
+  const [tone, setTone] = useState("podcast");
   const [activeAudio, setActiveAudio] = useState<{
     url: string;
     text: string;
     voiceName?: string;
     exaggeration?: number;
     lang?: string;
+    tone?: string;
   } | null>(null);
 
   // Queries
@@ -124,6 +126,7 @@ export default function TextToSpeechPage() {
         voiceName: selectedVoice?.name,
         exaggeration: exaggeration,
         lang: data.targetLang || targetLang,
+        tone: data.tone || tone,
       });
       
       // Refetch history and billing/usage count
@@ -154,6 +157,7 @@ export default function TextToSpeechPage() {
       voiceId: selectedVoiceId,
       exaggeration,
       targetLang,
+      tone,
     });
   };
 
@@ -206,7 +210,7 @@ export default function TextToSpeechPage() {
               </div>
 
               {/* Settings selectors */}
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {/* Language Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Target Language</label>
@@ -255,6 +259,30 @@ export default function TextToSpeechPage() {
                       </SelectContent>
                     </Select>
                   )}
+                </div>
+
+                {/* Voice Tone Selection */}
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Voice Tone</label>
+                  <Select value={tone} onValueChange={setTone}>
+                    <SelectTrigger className="bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-805 dark:text-zinc-200 font-semibold focus:border-violet-300">
+                      <SelectValue placeholder="Select Tone" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-lg">
+                      <SelectItem value="podcast" className="focus:bg-violet-50 dark:focus:bg-violet-955/40 cursor-pointer font-medium">
+                        🎙️ Podcast
+                      </SelectItem>
+                      <SelectItem value="cinematic" className="focus:bg-violet-50 dark:focus:bg-violet-955/40 cursor-pointer font-medium">
+                        🎬 Cinematic
+                      </SelectItem>
+                      <SelectItem value="documentary" className="focus:bg-violet-50 dark:focus:bg-violet-955/40 cursor-pointer font-medium">
+                        📽️ Documentary
+                      </SelectItem>
+                      <SelectItem value="conversational" className="focus:bg-violet-50 dark:focus:bg-violet-955/40 cursor-pointer font-medium">
+                        💬 Conversational
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Exaggeration Slider */}
@@ -311,6 +339,7 @@ export default function TextToSpeechPage() {
                 voiceName={activeAudio.voiceName}
                 exaggeration={activeAudio.exaggeration}
                 lang={activeAudio.lang}
+                tone={activeAudio.tone}
               />
             </div>
           )}
@@ -392,6 +421,10 @@ export default function TextToSpeechPage() {
                       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-zinc-500 dark:text-zinc-455 font-bold mt-0.5">
                         <span className="text-zinc-650 dark:text-zinc-350 font-bold">Voice: {gen.voice?.name || "Deleted"}</span>
                         <span>•</span>
+                        <span className="capitalize font-bold text-violet-650 dark:text-violet-400 bg-violet-50 dark:bg-violet-955/25 px-1.5 py-0.5 rounded border border-violet-100/50 dark:border-violet-900/40 text-[9px]">
+                          {gen.tone === "cinematic" ? "🎬 Cinematic" : gen.tone === "documentary" ? "📽️ Documentary" : gen.tone === "conversational" ? "💬 Conversational" : "🎙️ Podcast"}
+                        </span>
+                        <span>•</span>
                         <span className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
                           <Globe className="h-3 w-3 text-zinc-400" />
                           {langDetails.flag} {langDetails.name}
@@ -420,8 +453,10 @@ export default function TextToSpeechPage() {
                           voiceName: gen.voice?.name,
                           exaggeration: 0.5,
                           lang: gen.targetLang || "en",
+                          tone: gen.tone || "podcast",
                         });
                         setTargetLang(gen.targetLang || "en");
+                        setTone(gen.tone || "podcast");
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                       size="sm" 
