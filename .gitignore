@@ -44,3 +44,10 @@ next-env.d.ts
 /.clerk/
 
 /src/generated/prisma
+
+# sqlite database
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+

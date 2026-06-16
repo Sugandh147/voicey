@@ -7,14 +7,14 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
   id         String   @id @default(cuid())
   clerkId    String   @unique
   email      String   @unique
-  plan       Plan     @default(FREE)
+  plan       String   @default("FREE")
   usageCount Int      @default(0)
   createdAt  DateTime @default(now())
   voices     Voice[]
@@ -57,7 +57,3 @@ model Translation {
   createdAt   DateTime @default(now())
 }
 
-enum Plan {
-  FREE
-  PRO
-}
