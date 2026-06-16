@@ -31,9 +31,11 @@ import {
   Calendar,
   Layers,
   ArrowUpCircle,
-  Globe
+  Globe,
+  Wand2
 } from "lucide-react";
 import { toast } from "sonner";
+import { rewriteTextForTone } from "@/lib/rewriter";
 
 // High-fidelity list of major languages supported around the world
 const SUPPORTED_LANGUAGES = [
@@ -83,6 +85,7 @@ export default function TextToSpeechPage() {
   const [exaggeration, setExaggeration] = useState(0.5);
   const [targetLang, setTargetLang] = useState("en");
   const [tone, setTone] = useState("podcast");
+  const [autoRewrite, setAutoRewrite] = useState(false);
   const [activeAudio, setActiveAudio] = useState<{
     url: string;
     text: string;
@@ -109,6 +112,15 @@ export default function TextToSpeechPage() {
       }
     }
   }, [voices, selectedVoiceId]);
+
+  // Handle auto-rewriting when tone changes
+  useEffect(() => {
+    if (autoRewrite && inputText.trim()) {
+      const rewritten = rewriteTextForTone(inputText, tone);
+      setInputText(rewritten);
+      toast.info(`Script rewritten in ${tone} style!`);
+    }
+  }, [tone, autoRewrite]);
 
   // Limits
   const maxChars = planData?.plan === "PRO" ? 5000 : 500;
@@ -207,6 +219,41 @@ export default function TextToSpeechPage() {
                   onChange={(e) => setInputText(e.target.value)}
                   className="min-h-[140px] bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-violet-500/20 text-zinc-800 dark:text-zinc-250 placeholder:text-zinc-400 dark:placeholder:text-zinc-550 focus-visible:border-violet-300 font-medium"
                 />
+
+                {/* Text Rewriter Options */}
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1.5 border-t border-zinc-150 dark:border-zinc-850 mt-2">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox"
+                      id="auto-rewrite-toggle"
+                      checked={autoRewrite}
+                      onChange={(e) => setAutoRewrite(e.target.checked)}
+                      className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-800 text-violet-655 focus:ring-violet-500/25 cursor-pointer accent-violet-600"
+                    />
+                    <label htmlFor="auto-rewrite-toggle" className="text-xs font-bold text-zinc-500 dark:text-zinc-400 cursor-pointer select-none">
+                      Auto-Rewrite on Tone Change
+                    </label>
+                  </div>
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      if (!inputText.trim()) {
+                        toast.error("Please enter some text first.");
+                        return;
+                      }
+                      const rewritten = rewriteTextForTone(inputText, tone);
+                      setInputText(rewritten);
+                      toast.success(`Rewritten for ${tone} tone!`);
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs font-bold gap-1.5 border-zinc-250 dark:border-zinc-805 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
+                  >
+                    <Wand2 className="h-3.5 w-3.5 text-violet-500 animate-pulse" />
+                    Rewrite to {tone} style
+                  </Button>
+                </div>
               </div>
 
               {/* Settings selectors */}
@@ -466,11 +513,11 @@ export default function TextToSpeechPage() {
                       <Play className="h-3 w-3 fill-current" />
                       Listen
                     </Button>
-                    <a href={audioUrl} download={`voicey-gen-${gen.id}.mp3`}>
+                    <a href={`${audioUrl}?download=true`} download={`voicey-gen-${gen.id}.mp3`}>
                       <Button 
                         size="sm" 
                         variant="ghost"
-                        className="text-zinc-450 dark:text-zinc-450 hover:text-zinc-700 dark:hover:text-zinc-205 hover:bg-zinc-100 dark:hover:bg-zinc-800 h-8 w-8 transition-colors duration-250"
+                        className="text-zinc-455 dark:text-zinc-450 hover:text-zinc-700 dark:hover:text-zinc-205 hover:bg-zinc-100 dark:hover:bg-zinc-800 h-8 w-8 transition-colors duration-250"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </Button>

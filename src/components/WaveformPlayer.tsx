@@ -149,14 +149,14 @@ function speakFallbackText(
 
   // Tone adjustments
   if (tone === "cinematic") {
-    pitch = pitch * 0.82; // deeper, dramatic voice
-    rate = rate * 0.82;   // slower, theatrical pauses
+    pitch = pitch * 0.65; // extremely deep, booming voice
+    rate = rate * 0.68;   // very slow, majestic cinematic timing
   } else if (tone === "documentary") {
-    pitch = pitch * 0.95; // steady and formal
-    rate = rate * 0.92;   // structured documentary pacing
+    pitch = pitch * 0.85; // professional, lower pitch
+    rate = rate * 0.82;   // structured, slow-narrated cadence
   } else if (tone === "podcast") {
-    pitch = pitch * 1.05; // bright, engaging
-    rate = rate * 1.08;   // lively and conversational
+    pitch = pitch * 1.15; // bright, high-energy voice
+    rate = rate * 1.18;   // fast, engaging podcast speed
   }
 
   // Exaggeration adjustments
@@ -391,7 +391,7 @@ export function WaveformPlayer({
             )}
           </Button>
 
-          <a href={src} download="voicey-generation.mp3">
+          <a href={`${src}${src.includes('?') ? '&' : '?'}download=true`} download="voicey-generation.mp3">
             <Button
               variant="ghost"
               size="icon"

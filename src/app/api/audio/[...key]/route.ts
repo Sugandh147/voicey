@@ -54,6 +54,20 @@ export async function GET(
   const { key } = await params;
   const r2Key = key.join("/");
 
+  const download = req.nextUrl.searchParams.get("download") === "true";
+  const filename = r2Key.split("/").pop() || "audio.mp3";
+
+  const getResponseHeaders = (contentType: string) => {
+    const headers: Record<string, string> = {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=31536000, immutable",
+    };
+    if (download) {
+      headers["Content-Disposition"] = `attachment; filename="${filename}"`;
+    }
+    return headers;
+  };
+
   try {
     if (r2Key.startsWith("demo-generations/")) {
       const fs = require("fs");
@@ -62,10 +76,7 @@ export async function GET(
       if (fs.existsSync(filePath)) {
         const fileBuffer = fs.readFileSync(filePath);
         return new Response(new Uint8Array(fileBuffer), {
-          headers: {
-            "Content-Type": "audio/mpeg",
-            "Cache-Control": "public, max-age=31536000, immutable",
-          },
+          headers: getResponseHeaders("audio/mpeg"),
         });
       }
     }
@@ -89,10 +100,7 @@ export async function GET(
 
       const fileBuffer = generateSilenceWav(duration);
       return new Response(new Uint8Array(fileBuffer), {
-        headers: {
-          "Content-Type": "audio/wav",
-          "Cache-Control": "public, max-age=31536000, immutable",
-        },
+        headers: getResponseHeaders("audio/wav"),
       });
     }
 
@@ -131,10 +139,7 @@ export async function GET(
 
     const fileBuffer = await getR2FileBuffer(r2Key);
     return new Response(new Uint8Array(fileBuffer), {
-      headers: {
-        "Content-Type": "audio/wav",
-        "Cache-Control": "public, max-age=31536000, immutable",
-      },
+      headers: getResponseHeaders("audio/wav"),
     });
   } catch (error) {
     console.error("Audio proxy file fetch error:", error);
