@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getR2FileBuffer } from "@/lib/r2";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
+import { generateSpeechLocal } from "@/lib/tts-local";
 
 function generateSilenceWav(duration: number): Buffer {
   const sampleRate = 44100;
@@ -73,10 +74,50 @@ export async function GET(
       const fs = require("fs");
       const path = require("path");
       const filePath = path.join(process.cwd(), "public", r2Key);
+      
+      if (!fs.existsSync(filePath)) {
+        try {
+          const generationId = r2Key.split("/").pop()?.replace(".mp3", "");
+          if (generationId) {
+            const gen = await prisma.generation.findUnique({
+              where: { id: generationId },
+              include: { voice: true },
+            });
+            if (gen) {
+              const lang = gen.targetLang || "en";
+              const text = gen.text;
+              const voiceName = gen.voice?.name || "Grace";
+              const tone = gen.tone || "podcast";
+              const emotion = gen.emotion || "cheerful";
+
+              const localTtsResult = await generateSpeechLocal(
+                text,
+                voiceName,
+                0.5,
+                tone,
+                lang,
+                emotion
+              );
+
+              const dir = path.dirname(filePath);
+              if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+              }
+              fs.writeFileSync(filePath, localTtsResult.buffer);
+              console.log(`Dynamically regenerated missing demo audio file: ${filePath}`);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to dynamically regenerate missing demo audio file:", err);
+        }
+      }
+
       if (fs.existsSync(filePath)) {
         const fileBuffer = fs.readFileSync(filePath);
+        const isWav = fileBuffer.slice(0, 4).toString("ascii") === "RIFF";
+        const contentType = isWav ? "audio/wav" : "audio/mpeg";
         return new Response(new Uint8Array(fileBuffer), {
-          headers: getResponseHeaders("audio/mpeg"),
+          headers: getResponseHeaders(contentType),
         });
       }
     }
@@ -84,6 +125,18 @@ export async function GET(
     const isDemoKey = r2Key === "demo-fallback-key" || r2Key.startsWith("demo-voice-key-");
     
     if (isDemoKey) {
+      if (r2Key.startsWith("demo-voice-key-")) {
+        const fs = require("fs");
+        const path = require("path");
+        const filePath = path.join(process.cwd(), "public", "demo-voices", `${r2Key}.wav`);
+        if (fs.existsSync(filePath)) {
+          const fileBuffer = fs.readFileSync(filePath);
+          return new Response(new Uint8Array(fileBuffer), {
+            headers: getResponseHeaders("audio/wav"),
+          });
+        }
+      }
+
       // Find the generation text/duration in DB to match
       let duration = 5.0;
       try {

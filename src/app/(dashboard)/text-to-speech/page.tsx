@@ -79,12 +79,24 @@ const SUPPORTED_LANGUAGES = [
   { code: "sw", name: "Swahili", flag: "🇰🇪", nativeName: "Kiswahili" },
 ];
 
+const EMOTIONS = [
+  { id: "cheerful", name: "Cheerful", emoji: "😊" },
+  { id: "serious", name: "Serious", emoji: "🏛️" },
+  { id: "monotone", name: "Monotone", emoji: "🤖" },
+  { id: "fully_expressive", name: "Fully Expressive", emoji: "🔥" },
+  { id: "melodious", name: "Melodious", emoji: "🎶" },
+  { id: "whispering", name: "Whispering", emoji: "🤫" },
+  { id: "singing", name: "Singing", emoji: "🎤" },
+  { id: "deep", name: "Deep", emoji: "🌊" },
+];
+
 export default function TextToSpeechPage() {
   const [inputText, setInputText] = useState("");
   const [selectedVoiceId, setSelectedVoiceId] = useState("");
   const [exaggeration, setExaggeration] = useState(0.5);
   const [targetLang, setTargetLang] = useState("en");
   const [tone, setTone] = useState("podcast");
+  const [emotion, setEmotion] = useState("cheerful");
   const [autoRewrite, setAutoRewrite] = useState(false);
   const [activeAudio, setActiveAudio] = useState<{
     url: string;
@@ -93,6 +105,7 @@ export default function TextToSpeechPage() {
     exaggeration?: number;
     lang?: string;
     tone?: string;
+    emotion?: string;
   } | null>(null);
 
   // Queries
@@ -133,12 +146,13 @@ export default function TextToSpeechPage() {
       
       // Load generated audio url, script text, and correct language
       setActiveAudio({
-        url: data.url,
+        url: getAudioUrl(data.r2Key),
         text: data.text, // uses the translated text from backend!
         voiceName: selectedVoice?.name,
         exaggeration: exaggeration,
         lang: data.targetLang || targetLang,
         tone: data.tone || tone,
+        emotion: data.emotion || emotion,
       });
       
       // Refetch history and billing/usage count
@@ -170,6 +184,7 @@ export default function TextToSpeechPage() {
       exaggeration,
       targetLang,
       tone,
+      emotion,
     });
   };
 
@@ -184,9 +199,9 @@ export default function TextToSpeechPage() {
   const selectedVoice = voices?.find(v => v.id === selectedVoiceId);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-505">
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-850 dark:text-zinc-100">Text to Speech</h1>
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100">Text to Speech</h1>
         <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium mt-1">
           Synthesize high-fidelity voice files using our Chatterbox serverless engine.
         </p>
@@ -194,10 +209,10 @@ export default function TextToSpeechPage() {
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
         {/* Synthesis Form */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-white/90 dark:bg-zinc-900/90 border-zinc-200/85 dark:border-zinc-805 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
+        <div className="lg:col-span-2 space-y-8">
+          <Card className="bg-white/90 dark:bg-zinc-900/90 border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-md transition-shadow duration-300 relative overflow-hidden">
             <CardHeader className="pb-4">
-              <CardTitle className="text-lg flex items-center gap-2 text-zinc-750 dark:text-zinc-250">
+              <CardTitle className="text-lg flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
                 <Sparkles className="h-5 w-5 text-violet-500 animate-float" />
                 Synthesis Configuration
               </CardTitle>
@@ -208,7 +223,7 @@ export default function TextToSpeechPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs font-bold text-zinc-500 dark:text-zinc-400">
                   <label htmlFor="tts-text">Enter Script</label>
-                  <span className={`${isOverLimit ? "text-rose-600 font-extrabold" : "text-zinc-450 dark:text-zinc-500"}`}>
+                  <span className={`${isOverLimit ? "text-rose-600 font-extrabold" : "text-zinc-400 dark:text-zinc-500"}`}>
                     {inputText.length} / {maxChars} characters
                   </span>
                 </div>
@@ -217,18 +232,18 @@ export default function TextToSpeechPage() {
                   placeholder="Type what you want generated, e.g., in English, Hindi, Spanish..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  className="min-h-[140px] bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-violet-500/20 text-zinc-800 dark:text-zinc-250 placeholder:text-zinc-400 dark:placeholder:text-zinc-550 focus-visible:border-violet-300 font-medium"
+                  className="min-h-[140px] bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus-visible:ring-violet-500/20 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus-visible:border-violet-300 font-medium"
                 />
 
                 {/* Text Rewriter Options */}
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-1.5 border-t border-zinc-150 dark:border-zinc-850 mt-2">
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-1.5 border-t border-zinc-200 dark:border-zinc-800 mt-2">
                   <div className="flex items-center gap-2">
                     <input 
                       type="checkbox"
                       id="auto-rewrite-toggle"
                       checked={autoRewrite}
                       onChange={(e) => setAutoRewrite(e.target.checked)}
-                      className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-800 text-violet-655 focus:ring-violet-500/25 cursor-pointer accent-violet-600"
+                      className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-800 text-violet-600 focus:ring-violet-500/25 cursor-pointer accent-violet-600"
                     />
                     <label htmlFor="auto-rewrite-toggle" className="text-xs font-bold text-zinc-500 dark:text-zinc-400 cursor-pointer select-none">
                       Auto-Rewrite on Tone Change
@@ -248,7 +263,7 @@ export default function TextToSpeechPage() {
                     }}
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs font-bold gap-1.5 border-zinc-250 dark:border-zinc-805 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
+                    className="h-8 text-xs font-bold gap-1.5 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
                   >
                     <Wand2 className="h-3.5 w-3.5 text-violet-500 animate-pulse" />
                     Rewrite to {tone} style
@@ -257,17 +272,17 @@ export default function TextToSpeechPage() {
               </div>
 
               {/* Settings selectors */}
-              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
                 {/* Language Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Target Language</label>
                   <Select value={targetLang} onValueChange={setTargetLang}>
-                    <SelectTrigger className="bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-805 dark:text-zinc-200 font-semibold focus:border-violet-300">
+                    <SelectTrigger className="w-full bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-800 dark:text-zinc-200 font-semibold focus:border-violet-300">
                       <SelectValue placeholder="Select Language" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-lg max-h-[200px]">
                       {SUPPORTED_LANGUAGES.map((lang) => (
-                        <SelectItem key={lang.code} value={lang.code} className="focus:bg-violet-50 dark:focus:bg-violet-955/40 cursor-pointer">
+                        <SelectItem key={lang.code} value={lang.code} className="focus:bg-violet-50 dark:focus:bg-violet-950/40 cursor-pointer">
                           <span className="flex items-center gap-2">
                             <span>{lang.flag}</span>
                             <span>{lang.name}</span>
@@ -285,7 +300,7 @@ export default function TextToSpeechPage() {
                     <Skeleton className="h-10 w-full bg-zinc-100 dark:bg-zinc-800" />
                   ) : (
                     <Select value={selectedVoiceId} onValueChange={setSelectedVoiceId}>
-                      <SelectTrigger className="bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-800 dark:text-zinc-200 font-semibold focus:border-violet-300">
+                      <SelectTrigger className="w-full bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-800 dark:text-zinc-200 font-semibold focus:border-violet-300">
                         <SelectValue placeholder="Select a voice model" />
                       </SelectTrigger>
                       <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-lg">
@@ -312,7 +327,7 @@ export default function TextToSpeechPage() {
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Voice Tone</label>
                   <Select value={tone} onValueChange={setTone}>
-                    <SelectTrigger className="bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-805 dark:text-zinc-200 font-semibold focus:border-violet-300">
+                    <SelectTrigger className="w-full bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-800 dark:text-zinc-200 font-semibold focus:border-violet-300">
                       <SelectValue placeholder="Select Tone" />
                     </SelectTrigger>
                     <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 shadow-lg">
@@ -336,7 +351,7 @@ export default function TextToSpeechPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs font-bold text-zinc-500 dark:text-zinc-400">
                     <span>Emotion Exaggeration</span>
-                    <span className="text-violet-650 dark:text-violet-400 font-extrabold">{exaggeration.toFixed(2)}</span>
+                    <span className="text-violet-600 dark:text-violet-400 font-extrabold">{exaggeration.toFixed(2)}</span>
                   </div>
                   <div className="pt-2 px-1">
                     <Slider
@@ -345,13 +360,40 @@ export default function TextToSpeechPage() {
                       max={1.0}
                       step={0.05}
                       onValueChange={(val) => setExaggeration(val[0])}
-                      className="[&>span:first-child]:bg-zinc-150 dark:[&>span:first-child]:bg-zinc-805 [&>span:first-child>span]:bg-violet-600"
+                      className="[&>span:first-child]:bg-zinc-200 dark:[&>span:first-child]:bg-zinc-800 [&>span:first-child>span]:bg-violet-600"
                     />
-                    <div className="flex justify-between text-[10px] text-zinc-455 dark:text-zinc-500 font-bold mt-2">
+                    <div className="flex justify-between text-[10px] text-zinc-400 dark:text-zinc-550 font-bold mt-2">
                       <span>0.0 (Monotone)</span>
                       <span>1.0 (Expressive)</span>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Emotion Style Tag selector chips */}
+              <div className="space-y-3 pt-4 border-t border-zinc-200 dark:border-zinc-800/60">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-extrabold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Emotion Style Tag</label>
+                  <span className="text-[10px] text-violet-600 dark:text-violet-400 font-extrabold bg-violet-50 dark:bg-violet-955/20 px-2 py-0.5 rounded border border-violet-100 dark:border-violet-900/40 capitalize">
+                    {EMOTIONS.find(e => e.id === emotion)?.name || emotion}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {EMOTIONS.map((emo) => (
+                    <button
+                      key={emo.id}
+                      type="button"
+                      onClick={() => setEmotion(emo.id)}
+                      className={`px-3 py-2 rounded-xl text-xs font-bold transition-all duration-300 active:scale-95 flex items-center gap-2 cursor-pointer border ${
+                        emotion === emo.id
+                          ? "bg-gradient-to-r from-violet-600 to-indigo-600 border-violet-600 text-white shadow-md shadow-violet-500/15 hover:shadow-lg hover:shadow-violet-500/25 scale-102"
+                          : "bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900/60 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+                      }`}
+                    >
+                      <span className="text-sm shrink-0">{emo.emoji}</span>
+                      <span>{emo.name}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -363,7 +405,7 @@ export default function TextToSpeechPage() {
               >
                 {generateSpeechMutation.isPending ? (
                   <>
-                    <Skeleton className="h-4 w-4 rounded-full animate-spin border-2 border-zinc-205 dark:border-zinc-800 border-t-transparent bg-transparent" />
+                    <Skeleton className="h-4 w-4 rounded-full animate-spin border-2 border-zinc-200 dark:border-zinc-800 border-t-transparent bg-transparent" />
                     Synthesizing Audio via GPU...
                   </>
                 ) : (
@@ -379,7 +421,7 @@ export default function TextToSpeechPage() {
           {/* Active Audio Waveform Player */}
           {activeAudio && (
             <div className="space-y-2 animate-in slide-in-from-top-3 duration-250">
-              <h3 className="text-xs font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest px-1">Active Output Track</h3>
+              <h3 className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest px-1">Active Output Track</h3>
               <WaveformPlayer
                 src={activeAudio.url}
                 text={activeAudio.text}
@@ -387,6 +429,7 @@ export default function TextToSpeechPage() {
                 exaggeration={activeAudio.exaggeration}
                 lang={activeAudio.lang}
                 tone={activeAudio.tone}
+                emotion={activeAudio.emotion}
               />
             </div>
           )}
@@ -394,7 +437,7 @@ export default function TextToSpeechPage() {
 
         {/* Sidebar Info */}
         <div className="space-y-6">
-          <Card className="bg-white/95 dark:bg-zinc-900/95 border-zinc-200/85 dark:border-zinc-800 p-5 text-sm space-y-4 shadow-sm hover:shadow-md transition-shadow duration-300">
+          <Card className="bg-white/95 dark:bg-zinc-900/95 border-zinc-200 dark:border-zinc-800 p-5 text-sm space-y-4 shadow-sm hover:shadow-md transition-shadow duration-300">
             <h4 className="font-bold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">
               <Layers className="h-4 w-4 text-violet-500 animate-float" />
               Active Voice Spec
@@ -403,11 +446,11 @@ export default function TextToSpeechPage() {
               <div className="space-y-2 text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
                 <div className="flex justify-between">
                   <span>Name:</span>
-                  <span className="font-bold text-zinc-805 dark:text-zinc-205">{selectedVoice.name}</span>
+                  <span className="font-bold text-zinc-800 dark:text-zinc-200">{selectedVoice.name}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Category:</span>
-                  <span className="text-zinc-850 dark:text-zinc-205 font-bold">{selectedVoice.isSystem ? "Preloaded Studio" : "Zero-Shot Clone"}</span>
+                  <span className="text-zinc-800 dark:text-zinc-200 font-bold">{selectedVoice.isSystem ? "Preloaded Studio" : "Zero-Shot Clone"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Status:</span>
@@ -418,7 +461,7 @@ export default function TextToSpeechPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-zinc-450 dark:text-zinc-500 font-bold">No voice selected. Select a model to view specs.</p>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 font-bold">No voice selected. Select a model to view specs.</p>
             )}
           </Card>
 
@@ -426,7 +469,7 @@ export default function TextToSpeechPage() {
             <Card className="bg-gradient-to-tr from-violet-600/5 to-fuchsia-600/5 border border-violet-100 dark:border-violet-900/50 shadow-2xs hover:shadow-xs transition-shadow duration-300 p-5 space-y-3.5">
               <div className="flex items-center gap-2">
                 <ArrowUpCircle className="h-5 w-5 text-violet-500 animate-float" />
-                <h4 className="font-bold text-zinc-800 dark:text-zinc-250 text-sm">Need longer generations?</h4>
+                <h4 className="font-bold text-zinc-800 dark:text-zinc-200 text-sm">Need longer generations?</h4>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed font-medium">
                 Upgrade to Pro to increase character length limits from 500 characters up to <strong className="text-zinc-700 dark:text-zinc-300 font-bold">5,000 characters</strong> per query.
@@ -437,8 +480,8 @@ export default function TextToSpeechPage() {
       </div>
 
       {/* Generation History Section */}
-      <div className="space-y-4 pt-4">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-850 dark:text-zinc-100 flex items-center gap-2">
+      <div className="space-y-6 pt-10 border-t border-zinc-200 dark:border-zinc-800">
+        <h2 className="text-lg font-bold tracking-tight text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
           <History className="h-4.5 w-4.5 text-zinc-500 dark:text-zinc-400 animate-float" />
           Generation History
         </h2>
@@ -464,12 +507,16 @@ export default function TextToSpeechPage() {
                       <Volume2 className="h-4.5 w-4.5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold truncate text-zinc-850 dark:text-zinc-200">"{gen.text}"</p>
-                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-zinc-500 dark:text-zinc-455 font-bold mt-0.5">
-                        <span className="text-zinc-650 dark:text-zinc-350 font-bold">Voice: {gen.voice?.name || "Deleted"}</span>
+                      <p className="text-sm font-bold truncate text-zinc-800 dark:text-zinc-200">"{gen.text}"</p>
+                      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-zinc-500 dark:text-zinc-400 font-bold mt-0.5">
+                        <span className="text-zinc-650 dark:text-zinc-300 font-bold">Voice: {gen.voice?.name || "Deleted"}</span>
                         <span>•</span>
-                        <span className="capitalize font-bold text-violet-650 dark:text-violet-400 bg-violet-50 dark:bg-violet-955/25 px-1.5 py-0.5 rounded border border-violet-100/50 dark:border-violet-900/40 text-[9px]">
+                        <span className="capitalize font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/25 px-1.5 py-0.5 rounded border border-violet-100/50 dark:border-violet-900/40 text-[9px]">
                           {gen.tone === "cinematic" ? "🎬 Cinematic" : gen.tone === "documentary" ? "📽️ Documentary" : gen.tone === "conversational" ? "💬 Conversational" : "🎙️ Podcast"}
+                        </span>
+                        <span>•</span>
+                        <span className="capitalize font-bold text-fuchsia-600 dark:text-fuchsia-400 bg-fuchsia-50 dark:bg-fuchsia-955/25 px-1.5 py-0.5 rounded border border-fuchsia-100/50 dark:border-fuchsia-900/40 text-[9px]">
+                          {gen.emotion === "cheerful" ? "😊 Cheerful" : gen.emotion === "serious" ? "🏛️ Serious" : gen.emotion === "monotone" ? "🤖 Monotone" : gen.emotion === "fully_expressive" ? "🔥 Expressive" : gen.emotion === "melodious" ? "🎶 Melodious" : gen.emotion === "whispering" ? "🤫 Whispering" : gen.emotion === "singing" ? "🎤 Singing" : "🌊 Deep"}
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1.5 text-violet-600 dark:text-violet-400">
@@ -478,7 +525,7 @@ export default function TextToSpeechPage() {
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-zinc-400 dark:text-zinc-550" />
+                          <Calendar className="h-3 w-3 text-zinc-400 dark:text-zinc-500" />
                           {new Date(gen.createdAt).toLocaleDateString()}
                         </span>
                         {gen.duration && (
@@ -501,27 +548,30 @@ export default function TextToSpeechPage() {
                           exaggeration: 0.5,
                           lang: gen.targetLang || "en",
                           tone: gen.tone || "podcast",
+                          emotion: gen.emotion || "cheerful",
                         });
                         setTargetLang(gen.targetLang || "en");
                         setTone(gen.tone || "podcast");
+                        setEmotion(gen.emotion || "cheerful");
                         window.scrollTo({ top: 0, behavior: "smooth" });
                       }}
                       size="sm" 
                       variant="secondary"
-                      className="bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-250 dark:border-zinc-750 hover:border-zinc-300 dark:hover:border-zinc-600 text-xs h-8 px-3.5 gap-1.5 active:scale-95 transition-all font-bold shadow-2xs"
+                      className="bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-xs h-8 px-3.5 gap-1.5 active:scale-95 transition-all font-bold shadow-2xs"
                     >
                       <Play className="h-3 w-3 fill-current" />
                       Listen
                     </Button>
-                    <a href={`${audioUrl}?download=true`} download={`voicey-gen-${gen.id}.mp3`}>
-                      <Button 
-                        size="sm" 
-                        variant="ghost"
-                        className="text-zinc-455 dark:text-zinc-450 hover:text-zinc-700 dark:hover:text-zinc-205 hover:bg-zinc-100 dark:hover:bg-zinc-800 h-8 w-8 transition-colors duration-250"
-                      >
+                    <Button 
+                      asChild
+                      size="sm" 
+                      variant="ghost"
+                      className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 h-8 w-8 transition-colors duration-250"
+                    >
+                      <a href={`${audioUrl}?download=true`} download={`voicey-gen-${gen.id}.mp3`}>
                         <Download className="h-3.5 w-3.5" />
-                      </Button>
-                    </a>
+                      </a>
+                    </Button>
                   </div>
                 </div>
               );

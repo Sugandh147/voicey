@@ -367,18 +367,18 @@ export default function VoicesPage() {
           <Skeleton className="h-44 w-full bg-zinc-200/50 dark:bg-zinc-800/50 rounded-2xl animate-pulse" />
         </div>
       ) : voices && voices.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
           {voices.map((voice) => (
             <Card 
               key={voice.id}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200/90 dark:border-zinc-800 hover:border-violet-250 dark:hover:border-violet-850 rounded-2xl flex flex-col justify-between shadow-xs hover:shadow-md overflow-hidden group hover:-translate-y-1 transition-all duration-355 relative"
+              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-800 rounded-2xl flex flex-col justify-between shadow-xs hover:shadow-md overflow-hidden group hover:-translate-y-1 transition-all duration-300 relative"
             >
               <CardHeader className="pb-3 relative">
                 <div className="flex justify-between items-start">
                   <span className={`text-[9px] font-extrabold tracking-wider uppercase px-2 py-0.5 rounded border ${
                     voice.isSystem 
-                      ? "bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-100 dark:border-violet-900/50" 
-                      : "bg-fuchsia-50 dark:bg-fuchsia-950/40 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-100 dark:border-fuchsia-900/50"
+                      ? "bg-violet-50 dark:bg-violet-955/40 text-violet-700 dark:text-violet-300 border-violet-100 dark:border-violet-900/50" 
+                      : "bg-fuchsia-50 dark:bg-fuchsia-955/40 text-fuchsia-700 dark:text-fuchsia-300 border-fuchsia-100 dark:border-fuchsia-900/50"
                   }`}>
                     {voice.isSystem ? "System Preset" : "Custom Clone"}
                   </span>
@@ -389,14 +389,14 @@ export default function VoicesPage() {
                       disabled={deleteVoiceMutation.isPending}
                       variant="ghost" 
                       size="icon"
-                      className="text-zinc-400 dark:text-zinc-500 hover:text-rose-605 hover:bg-rose-500/10 h-7 w-7 rounded-lg active:scale-95 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
+                      className="text-zinc-400 dark:text-zinc-500 hover:text-rose-600 hover:bg-rose-500/10 h-7 w-7 rounded-lg active:scale-95 transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 cursor-pointer"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
                 <CardTitle className="text-base font-bold text-zinc-800 dark:text-zinc-100 mt-2">{voice.name}</CardTitle>
-                <CardDescription className="text-zinc-450 dark:text-zinc-500 text-[11px] font-semibold">
+                <CardDescription className="text-zinc-400 dark:text-zinc-500 text-[11px] font-semibold">
                   {voice.isSystem ? "Built-in voice pre-loaded" : `Created on ${new Date(voice.createdAt).toLocaleDateString()}`}
                 </CardDescription>
               </CardHeader>
@@ -408,7 +408,7 @@ export default function VoicesPage() {
                 </div>
               </CardContent>
 
-              <CardFooter className="border-t border-zinc-150 dark:border-zinc-800 p-4 bg-zinc-50/40 dark:bg-zinc-950/20 flex gap-2">
+              <CardFooter className="border-t border-zinc-200 dark:border-zinc-800 p-4 bg-zinc-50/40 dark:bg-zinc-950/20 flex gap-2">
                 <a 
                   href={`/text-to-speech?voice=${voice.id}`}
                   onClick={(e) => {
@@ -424,7 +424,7 @@ export default function VoicesPage() {
                     variant="secondary"
                     className="w-full bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-750 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-800 text-xs h-8.5 gap-1.5 active:scale-95 transition-all font-bold shadow-2xs cursor-pointer"
                   >
-                    <Volume2 className="h-3.5 w-3.5 text-zinc-550 dark:text-zinc-400" />
+                    <Volume2 className="h-3.5 w-3.5 text-zinc-500 dark:text-zinc-400" />
                     Use Voice
                   </Button>
                 </a>

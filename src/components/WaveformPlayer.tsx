@@ -7,10 +7,12 @@ import { Button } from "./ui/button";
 
 function speakFallbackText(
   text: string,
-  voiceName?: string,
+  voiceName: string | undefined,
   exaggeration: number = 0.5,
   lang: string = "en",
-  tone?: string,
+  tone: string | undefined,
+  emotion: string | undefined,
+  loadedVoices: SpeechSynthesisVoice[],
   onEnd?: () => void,
   onError?: () => void
 ) {
@@ -30,10 +32,9 @@ function speakFallbackText(
   }
 
   const utterance = new SpeechSynthesisUtterance(processedText);
-  const voices = window.speechSynthesis.getVoices();
 
   // Filter voices matching the target language
-  const languageVoices = voices.filter((v) => 
+  const languageVoices = loadedVoices.filter((v) => 
     v.lang.toLowerCase() === lang.toLowerCase() ||
     v.lang.toLowerCase().startsWith(lang.toLowerCase() + "-") ||
     v.lang.toLowerCase().startsWith(lang.toLowerCase())
@@ -44,31 +45,68 @@ function speakFallbackText(
     (n) => vn.includes(n)
   );
 
+  // Separate voices by gender
+  const femaleVoices = languageVoices.filter((v) => {
+    const nameLower = v.name.toLowerCase();
+    return (
+      nameLower.includes("female") ||
+      nameLower.includes("zira") ||
+      nameLower.includes("samantha") ||
+      nameLower.includes("hazel") ||
+      nameLower.includes("heera") ||
+      nameLower.includes("haruka") ||
+      nameLower.includes("elsa") ||
+      nameLower.includes("anna") ||
+      nameLower.includes("helen") ||
+      nameLower.includes("susan") ||
+      nameLower.includes("karen") ||
+      nameLower.includes("moira") ||
+      nameLower.includes("tessa") ||
+      nameLower.includes("veena") ||
+      nameLower.includes("clara") ||
+      nameLower.includes("zuzana") ||
+      nameLower.includes("google us english") ||
+      (nameLower.includes("google") && !nameLower.includes("male"))
+    );
+  });
+
+  const maleVoices = languageVoices.filter((v) => {
+    const nameLower = v.name.toLowerCase();
+    return (
+      nameLower.includes("male") ||
+      nameLower.includes("david") ||
+      nameLower.includes("mark") ||
+      nameLower.includes("ravi") ||
+      nameLower.includes("richard") ||
+      nameLower.includes("stefan") ||
+      nameLower.includes("claude") ||
+      nameLower.includes("sean") ||
+      nameLower.includes("george")
+    );
+  });
+
+  // Prioritize offline/local voices so that pitch shifts actually take effect
+  const localFemaleVoices = femaleVoices.filter((v) => v.localService === true);
+  const localMaleVoices = maleVoices.filter((v) => v.localService === true);
+
+  const activeFemalePool = localFemaleVoices.length > 0 ? localFemaleVoices : (femaleVoices.length > 0 ? femaleVoices : languageVoices);
+  const activeMalePool = localMaleVoices.length > 0 ? localMaleVoices : (maleVoices.length > 0 ? maleVoices : languageVoices);
+
   let selectedVoice = null;
-  if (languageVoices.length > 0) {
-    if (isFemale) {
-      selectedVoice = languageVoices.find(
-        (v) =>
-          v.name.toLowerCase().includes("female") ||
-          v.name.toLowerCase().includes("google") ||
-          v.name.toLowerCase().includes("natural") ||
-          v.name.toLowerCase().includes("zira") ||
-          v.name.toLowerCase().includes("samantha")
-      ) || languageVoices[0];
-    } else {
-      selectedVoice = languageVoices.find(
-        (v) =>
-          v.name.toLowerCase().includes("male") ||
-          v.name.toLowerCase().includes("david") ||
-          v.name.toLowerCase().includes("mark")
-      ) || languageVoices[0];
+  const hash = vn.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+
+  if (isFemale) {
+    if (activeFemalePool.length > 0) {
+      selectedVoice = activeFemalePool[hash % activeFemalePool.length];
     }
   } else {
-    // Default fallback to English voices
-    const englishVoices = voices.filter((v) => v.lang.startsWith("en"));
-    if (englishVoices.length > 0) {
-      selectedVoice = englishVoices[0];
+    if (activeMalePool.length > 0) {
+      selectedVoice = activeMalePool[hash % activeMalePool.length];
     }
+  }
+
+  if (!selectedVoice && languageVoices.length > 0) {
+    selectedVoice = languageVoices[0];
   }
 
   if (selectedVoice) {
@@ -76,101 +114,168 @@ function speakFallbackText(
   }
   utterance.lang = lang;
 
-  // Configure default pitch and speed rates
+  // Configure pitch and speed rates
   let pitch = 1.0;
   let rate = 1.0;
 
   if (voiceName) {
     // Female voices
     if (vn.includes("emily")) {
-      pitch = 1.05;
-      rate = 1.02;
-    } else if (vn.includes("rachel")) {
-      pitch = 1.15;
+      pitch = 1.22;
       rate = 1.12;
+    } else if (vn.includes("rachel")) {
+      pitch = 1.12;
+      rate = 1.04;
     } else if (vn.includes("bella")) {
-      pitch = 0.95;
-      rate = 0.82;
-    } else if (vn.includes("sarah")) {
-      pitch = 1.02;
-      rate = 1.05;
-    } else if (vn.includes("nicole")) {
-      pitch = 0.98;
-      rate = 0.96;
-    } else if (vn.includes("freya")) {
-      pitch = 1.10;
+      pitch = 0.84;
       rate = 0.88;
+    } else if (vn.includes("sarah")) {
+      pitch = 0.98;
+      rate = 0.94;
+    } else if (vn.includes("nicole")) {
+      pitch = 1.32;
+      rate = 0.98;
+    } else if (vn.includes("freya")) {
+      pitch = 0.78;
+      rate = 0.80;
     } else if (vn.includes("sophie")) {
-      pitch = 1.25;
-      rate = 1.08;
+      pitch = 1.42;
+      rate = 1.18;
     } else if (vn.includes("clara")) {
-      pitch = 1.08;
-      rate = 0.96;
+      pitch = 1.05;
+      rate = 0.98;
     } else if (vn.includes("lily")) {
-      pitch = 1.45;
-      rate = 1.05;
+      pitch = 0.90;
+      rate = 0.74;
     } else if (vn.includes("grace")) {
-      pitch = 0.92;
-      rate = 0.85;
+      pitch = 1.08;
+      rate = 1.05;
     }
     // Male voices
     else if (vn.includes("adam")) {
-      pitch = 0.92;
-      rate = 0.96;
-    } else if (vn.includes("dom")) {
-      pitch = 1.05;
-      rate = 1.18;
-    } else if (vn.includes("antoni")) {
-      pitch = 1.00;
-      rate = 0.98;
-    } else if (vn.includes("michael")) {
-      pitch = 0.88;
-      rate = 0.92;
-    } else if (vn.includes("george")) {
-      pitch = 0.72;
-      rate = 0.82;
-    } else if (vn.includes("marcus")) {
       pitch = 0.80;
       rate = 0.90;
-    } else if (vn.includes("daniel")) {
-      pitch = 1.04;
-      rate = 1.00;
-    } else if (vn.includes("james")) {
+    } else if (vn.includes("dom")) {
       pitch = 1.10;
-      rate = 1.15;
+      rate = 1.20;
+    } else if (vn.includes("antoni")) {
+      pitch = 0.95;
+      rate = 0.96;
+    } else if (vn.includes("michael")) {
+      pitch = 0.62;
+      rate = 0.78;
+    } else if (vn.includes("george")) {
+      pitch = 0.52;
+      rate = 0.68;
+    } else if (vn.includes("marcus")) {
+      pitch = 1.00;
+      rate = 1.02;
+    } else if (vn.includes("daniel")) {
+      pitch = 1.18;
+      rate = 1.10;
+    } else if (vn.includes("james")) {
+      pitch = 1.14;
+      rate = 1.16;
     } else if (vn.includes("arthur")) {
-      pitch = 0.74;
-      rate = 0.84;
+      pitch = 0.86;
+      rate = 0.76;
     } else if (vn.includes("liam")) {
-      pitch = 1.02;
+      pitch = 0.98;
       rate = 1.08;
+    } else if (vn.length > 0) {
+      // Stable characteristic offsets for custom clones
+      const pitchOffset = ((hash % 7) - 3) / 15;
+      const rateOffset = (((hash * 11) % 7) - 3) / 15;
+      pitch += pitchOffset;
+      rate += rateOffset;
     }
+  }
+
+  // Emotion Style Tags Adjustments
+  const selectedEmotion = emotion ? emotion.toLowerCase() : "cheerful";
+  let emotionVolume = 1.0;
+  
+  if (selectedEmotion === "cheerful") {
+    pitch = pitch * 1.20;
+    rate = rate * 1.08;
+  } else if (selectedEmotion === "serious") {
+    pitch = pitch * 0.82;
+    rate = rate * 0.86;
+  } else if (selectedEmotion === "monotone") {
+    pitch = isFemale ? 0.95 : 0.85; // reset and flatten pitch
+    rate = 0.92;
+  } else if (selectedEmotion === "fully_expressive") {
+    pitch = pitch * 1.35;
+    rate = rate * 1.15;
+  } else if (selectedEmotion === "melodious") {
+    pitch = pitch * 1.10;
+    rate = rate * 0.92;
+  } else if (selectedEmotion === "whispering") {
+    pitch = pitch * 0.90;
+    rate = rate * 0.72;
+    emotionVolume = 0.55;
+  } else if (selectedEmotion === "singing") {
+    pitch = pitch * 1.26;
+    rate = rate * 0.96;
+  } else if (selectedEmotion === "deep") {
+    pitch = pitch * 0.60;
+    rate = rate * 0.80;
   }
 
   // Tone adjustments
   if (tone === "cinematic") {
-    pitch = pitch * 0.65; // extremely deep, booming voice
-    rate = rate * 0.68;   // very slow, majestic cinematic timing
+    pitch = pitch * 0.72; // extremely deep, booming voice
+    rate = rate * 0.74;   // very slow, majestic cinematic timing
   } else if (tone === "documentary") {
-    pitch = pitch * 0.85; // professional, lower pitch
-    rate = rate * 0.82;   // structured, slow-narrated cadence
+    pitch = pitch * 0.90; // professional, lower pitch
+    rate = rate * 0.86;   // structured, slow-narrated cadence
   } else if (tone === "podcast") {
-    pitch = pitch * 1.15; // bright, high-energy voice
-    rate = rate * 1.18;   // fast, engaging podcast speed
+    pitch = pitch * 1.10; // bright, high-energy voice
+    rate = rate * 1.12;   // fast, engaging podcast speed
+  } else if (tone === "conversational") {
+    pitch = pitch * 0.98; // slightly elevated, friendly pitch
+    rate = rate * 1.04;   // natural spoken conversational pacing
   }
 
-  // Exaggeration adjustments
-  pitch = pitch + (exaggeration - 0.5) * 0.75;
-  rate = rate + (exaggeration - 0.5) * 0.55;
+  // Exaggeration adjustments with a strong distinct kick
+  const exaggerationDelta = exaggeration - 0.5;
+  if (selectedEmotion === "monotone") {
+    rate = rate + exaggerationDelta * 0.40;
+  } else {
+    pitch = pitch + exaggerationDelta * 1.50;
+    rate = rate + exaggerationDelta * 1.10;
+  }
 
-  utterance.pitch = Math.max(0.5, Math.min(2.0, pitch));
-  utterance.rate = Math.max(0.5, Math.min(2.0, rate));
-  utterance.volume = exaggeration > 0.8 ? 1.0 : (exaggeration < 0.2 ? 0.75 : 0.9);
+  utterance.pitch = Math.max(0.35, Math.min(2.3, pitch));
+  utterance.rate = Math.max(0.35, Math.min(2.3, rate));
+
+  const baseVolume = exaggeration > 0.8 ? 1.0 : (exaggeration < 0.2 ? 0.75 : 0.9);
+  utterance.volume = selectedEmotion === "whispering" ? emotionVolume : baseVolume;
 
   if (onEnd) utterance.onend = onEnd;
   if (onError) utterance.onerror = onError;
 
   window.speechSynthesis.speak(utterance);
+}
+
+function getProxyDownloadUrl(src: string): string {
+  // If it's already a local path, just append/handle download
+  if (!src.startsWith("http://") && !src.startsWith("https://")) {
+    return `${src}${src.includes('?') ? '&' : '?'}download=true`;
+  }
+
+  // It's a full URL. Let's find if it contains a known R2 prefix
+  const prefixes = ["generations/", "voices/", "demo-generations/", "demo-voice-key-"];
+  for (const prefix of prefixes) {
+    const index = src.indexOf(prefix);
+    if (index !== -1) {
+      const key = src.substring(index);
+      return `/api/audio/${key}?download=true`;
+    }
+  }
+
+  // Fallback to original
+  return `${src}${src.includes('?') ? '&' : '?'}download=true`;
 }
 
 export function WaveformPlayer({
@@ -180,6 +285,7 @@ export function WaveformPlayer({
   exaggeration = 0.5,
   lang = "en",
   tone,
+  emotion,
 }: {
   src: string;
   text?: string;
@@ -187,6 +293,7 @@ export function WaveformPlayer({
   exaggeration?: number;
   lang?: string;
   tone?: string;
+  emotion?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
@@ -196,6 +303,21 @@ export function WaveformPlayer({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [showDurationBar, setShowDurationBar] = useState(true);
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    const loadVoices = () => {
+      setBrowserVoices(window.speechSynthesis.getVoices());
+    };
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    return () => {
+      if (typeof window !== "undefined" && window.speechSynthesis) {
+        window.speechSynthesis.onvoiceschanged = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -239,6 +361,8 @@ export function WaveformPlayer({
           exaggeration,
           lang,
           tone,
+          emotion,
+          browserVoices,
           () => {
             setIsPlaying(false);
             ws.pause();
@@ -263,7 +387,7 @@ export function WaveformPlayer({
       window.speechSynthesis.cancel();
       ws.destroy();
     };
-  }, [src, text, voiceName, exaggeration, lang, tone]);
+  }, [src, text, voiceName, exaggeration, lang, tone, emotion]);
 
   const togglePlay = () => {
     if (src.includes("demo-fallback-key") && text) {
@@ -280,6 +404,8 @@ export function WaveformPlayer({
           exaggeration,
           lang,
           tone,
+          emotion,
+          browserVoices,
           () => {
             setIsPlaying(false);
             if (wavesurferRef.current) {
@@ -391,15 +517,16 @@ export function WaveformPlayer({
             )}
           </Button>
 
-          <a href={`${src}${src.includes('?') ? '&' : '?'}download=true`} download="voicey-generation.mp3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 w-9 transition-colors duration-200"
-            >
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 h-9 w-9 transition-colors duration-200"
+          >
+            <a href={getProxyDownloadUrl(src)} download="voicey-generation.mp3">
               <Download className="h-4.5 w-4.5" />
-            </Button>
-          </a>
+            </a>
+          </Button>
         </div>
       </div>
 

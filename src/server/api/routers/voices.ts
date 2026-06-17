@@ -46,7 +46,7 @@ export const voicesRouter = router({
 
       if (!isConfigured) {
         return {
-          uploadUrl: "/api/mock-upload",
+          uploadUrl: `/api/mock-upload?key=demo-voice-key-${randomId}`,
           r2Key: `demo-voice-key-${randomId}`,
         };
       }

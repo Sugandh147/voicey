@@ -3,6 +3,8 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../../trpc";
 import { generateSpeechFromModal } from "@/lib/modal";
 import { uploadToR2, getPresignedDownloadUrl } from "@/lib/r2";
+import { rewriteTextForTone } from "@/lib/rewriter";
+import { generateSpeechLocal } from "@/lib/tts-local";
 import fs from "fs";
 import path from "path";
 
@@ -15,10 +17,11 @@ export const ttsRouter = router({
         exaggeration: z.number().min(0).max(1).default(0.5),
         targetLang: z.string().optional(),
         tone: z.string().optional(),
+        emotion: z.string().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const { text, voiceId, exaggeration, targetLang, tone } = input;
+      const { text, voiceId, exaggeration, targetLang, tone, emotion } = input;
       const user = ctx.dbUser;
 
       // Plan limits check
@@ -58,11 +61,16 @@ export const ttsRouter = router({
         });
       }
 
+      // In demo mode, we do NOT automatically rewrite text on the server.
+      // The frontend handles auto-rewriting when 'Auto-Rewrite on Tone Change' is enabled.
+      // This allows the user to speak exactly what they type.
+      let processedText = text;
+
       // Translation step
-      let translatedText = text;
+      let translatedText = processedText;
       if (targetLang && targetLang !== "en") {
         try {
-          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+          const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(processedText)}`;
           const response = await fetch(url);
           if (response.ok) {
             const data = await response.json();
@@ -95,49 +103,17 @@ export const ttsRouter = router({
         const r2Key = `demo-generations/${generationId}.mp3`;
 
         if (!isConfigured) {
-          console.warn("⚠️ Voicey running in Demo mode: Fetching Google Translate TTS for audio generation.");
+          console.warn("⚠️ Voicey running in Demo mode: Generating speech locally.");
           const lang = targetLang || "en";
-          // Google Translate TTS has a limit of 200 characters. We chunk the text if it is longer.
-          const maxTtsLength = 200;
-          const textChunks: string[] = [];
           
-          if (translatedText.length <= maxTtsLength) {
-            textChunks.push(translatedText);
-          } else {
-            const words = translatedText.split(/\s+/);
-            let currentChunk = "";
-            for (const word of words) {
-              if ((currentChunk + " " + word).trim().length > maxTtsLength) {
-                if (currentChunk) textChunks.push(currentChunk.trim());
-                currentChunk = word;
-              } else {
-                currentChunk = (currentChunk + " " + word).trim();
-              }
-            }
-            if (currentChunk) {
-              textChunks.push(currentChunk.trim());
-            }
-          }
-
-          const audioBuffers: Buffer[] = [];
-          for (const chunk of textChunks) {
-            if (!chunk) continue;
-            const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${lang}&client=tw-ob&q=${encodeURIComponent(chunk)}`;
-            const response = await fetch(googleTtsUrl, {
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-              }
-            });
-
-            if (!response.ok) {
-              throw new Error(`Google Translate TTS returned status: ${response.status} for chunk: ${chunk}`);
-            }
-
-            const arrayBuffer = await response.arrayBuffer();
-            audioBuffers.push(Buffer.from(arrayBuffer));
-          }
-
-          const audioBuffer = Buffer.concat(audioBuffers);
+          const localTtsResult = await generateSpeechLocal(
+            translatedText,
+            voice.name,
+            exaggeration,
+            tone || "podcast",
+            lang,
+            emotion || "cheerful"
+          );
 
           // Write file to local cached directory
           const dir = path.join(process.cwd(), "public", "demo-generations");
@@ -145,7 +121,7 @@ export const ttsRouter = router({
             fs.mkdirSync(dir, { recursive: true });
           }
           const filePath = path.join(dir, `${generationId}.mp3`);
-          fs.writeFileSync(filePath, audioBuffer);
+          fs.writeFileSync(filePath, localTtsResult.buffer);
 
           audioUrl = `/api/audio/${r2Key}`;
           const wordCount = translatedText.split(/\s+/).length;
@@ -170,6 +146,7 @@ export const ttsRouter = router({
             duration,
             targetLang: targetLang || "en",
             tone: tone || "podcast",
+            emotion: emotion || "cheerful",
           },
         });
 

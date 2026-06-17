@@ -44,6 +44,7 @@ model Generation {
   duration  Float?
   targetLang String?
   tone      String?
+  emotion   String?
   createdAt DateTime @default(now())
 }
 

@@ -61,3 +61,15 @@ export function SignUp() {
     </div>
   );
 }
+
+export function OrganizationList(props: any) {
+  return (
+    <div className="p-8 border border-zinc-250 bg-white rounded-xl shadow-lg max-w-sm w-full text-center space-y-4">
+      <h2 className="text-xl font-bold text-zinc-900">Organization List (Mocked)</h2>
+      <p className="text-zinc-500 text-sm">Select or create an organization.</p>
+      <a href="/" className="inline-block w-full py-2 bg-violet-600 text-white font-semibold rounded-lg hover:bg-violet-500">
+        Go to Dashboard
+      </a>
+    </div>
+  );
+}
