@@ -31,7 +31,11 @@ export async function generateSpeechLocal(
 ): Promise<{ buffer: Buffer; format: "wav" | "mp3" }> {
   const isWindows = process.platform === "win32";
 
-  if (isWindows) {
+  // Only use Windows SAPI for English text, because default SAPI voices (Zira/David) 
+  // only support English and will speak gibberish or fail for other languages.
+  const isEnglish = targetLang === "en" || targetLang.startsWith("en-");
+
+  if (isWindows && isEnglish) {
     try {
       return await generateSpeechWindows(text, voiceName, exaggeration, tone, targetLang, emotion);
     } catch (err) {
@@ -248,26 +252,24 @@ async function generateSpeechWindows(
     // ==========================================
     // 5. Punctuation Pauses & Breaks
     // ==========================================
-    let processedText = text;
+    let processedText = escapeXml(text); // Escape first to protect our SSML tags
     if (selectedEmotion === "fully_expressive" || exaggeration > 0.8) {
-      processedText = text
+      processedText = processedText
         .replace(/(\. )/g, ' <break time="650ms"/> ')
         .replace(/(\!)/g, ' <break time="400ms"/> ! ')
         .replace(/(\?)/g, ' <break time="500ms"/> ? ');
     } else if (selectedEmotion === "monotone" || exaggeration < 0.2) {
       // strip pauses for monotone
-      processedText = text.replace(/[\!\?]/g, ".").replace(/[\,\;\:]/g, " ");
+      processedText = processedText.replace(/[\!\?]/g, ".").replace(/[\,\;\:]/g, " ");
     } else if (selectedEmotion === "singing") {
       // add lyrical rhythmic breath pauses
-      processedText = text.replace(/(\s+)/g, (match, p1, offset) => {
+      processedText = processedText.replace(/(\s+)/g, (match, p1, offset) => {
         return offset % 25 === 0 ? ' <break time="350ms"/> ' : " ";
       });
     }
 
-    const escapedText = escapeXml(processedText);
-
     // Build SSML wrapper
-    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${systemVoiceName}'><prosody pitch='${pitchStr}' rate='${rateStr}' volume='${volumeLevel}'>${escapedText}</prosody></voice></speak>`;
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'><voice name='${systemVoiceName}'><prosody pitch='${pitchStr}' rate='${rateStr}' volume='${volumeLevel}'>${processedText}</prosody></voice></speak>`;
     
     fs.writeFileSync(ssmlFile, ssml, "utf8");
 
