@@ -261,7 +261,7 @@ export default function DashboardPage() {
                 key={gen.id}
                 className="flex justify-between items-center p-4 bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/85 dark:border-zinc-800 hover:border-violet-250 dark:hover:border-violet-850 hover:shadow-xs rounded-xl shadow-xs transition-all duration-300 hover:translate-x-0.5"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex items-center gap-3.5 flex-1 min-w-0">
                   <div className="h-9 w-9 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400 flex-shrink-0 border border-zinc-150 dark:border-zinc-800">
                     <Volume2 className="h-4.5 w-4.5 text-zinc-500 dark:text-zinc-400 animate-float" />
                   </div>

@@ -502,7 +502,7 @@ export default function TextToSpeechPage() {
                   key={gen.id}
                   className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-violet-200 dark:hover:border-violet-850 hover:shadow-xs shadow-xs rounded-xl gap-4 transition-all duration-300 hover:translate-x-0.5"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0 w-full sm:w-auto">
+                  <div className="flex items-center gap-3.5 flex-1 min-w-0 w-full">
                     <div className="h-9 w-9 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0 border border-zinc-150 dark:border-zinc-800">
                       <Volume2 className="h-4.5 w-4.5" />
                     </div>

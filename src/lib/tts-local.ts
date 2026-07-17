@@ -243,9 +243,11 @@ async function generateSpeechWindows(
     rateMultiplier = Math.max(0.35, Math.min(2.3, rateMultiplier));
     volumeLevel = Math.max(10, Math.min(100, volumeLevel));
 
-    // Convert to relative percentage offsets for SSML
-    const pitchPercent = Math.round((pitchMultiplier - 1.0) * 100);
-    const pitchStr = pitchPercent >= 0 ? `+${pitchPercent}%` : `${pitchPercent}%`;
+    // Convert to relative offsets for SSML
+    // Microsoft SAPI supports percentages for 'rate', but 'pitch' requires semitones
+    const pitchSemitones = Math.round(12 * Math.log2(pitchMultiplier));
+    const pitchStr = pitchSemitones >= 0 ? `+${pitchSemitones}st` : `${pitchSemitones}st`;
+    
     const ratePercent = Math.round((rateMultiplier - 1.0) * 100);
     const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
 
