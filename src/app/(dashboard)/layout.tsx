@@ -204,7 +204,7 @@ export default function DashboardLayout({
               variant="ghost"
               size="icon"
               onClick={() => {
-                signOut();
+                signOut({ redirectUrl: '/' });
                 toast.success("Signed out successfully");
               }}
               className="text-zinc-450 dark:text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 h-8.5 w-8.5 rounded-lg transition-all"

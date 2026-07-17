@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
@@ -14,7 +14,9 @@ import {
   TrendingUp,
   Cpu,
   Layers,
-  Volume2
+  Volume2,
+  Play,
+  Pause
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -27,11 +29,29 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user } = useUser();
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [playingId, setPlayingId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Fetch plan and usage
   const { data: planData, isLoading: planLoading } = trpc.billing.getUserPlan.useQuery();
   // Fetch history limit to 3 recent items
-  const { data: generations, isLoading: genLoading } = trpc.tts.getGenerations.useQuery();
+  const { data: generations, isLoading: genLoading, refetch: refetchGenerations } = trpc.tts.getGenerations.useQuery();
+
+  // Migrate old local mock data if necessary
+  const migrateMutation = trpc.tts.migrateMockData.useMutation({
+    onSuccess: (data) => {
+      if (data.migratedCount > 0) {
+        toast.success(`Restored ${data.migratedCount} previous generations to your account!`);
+        refetchGenerations();
+      }
+    }
+  });
+
+  useEffect(() => {
+    // Attempt to migrate any leftover local voices to the new real account just once on load
+    migrateMutation.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const checkoutMutation = trpc.billing.createCheckoutSession.useMutation({
     onSuccess: (data) => {
@@ -51,6 +71,25 @@ export default function DashboardPage() {
   const handleRealCheckout = () => {
     const successUrl = window.location.origin;
     checkoutMutation.mutate({ successUrl });
+  };
+
+  const playAudio = (id: string, r2Key: string) => {
+    if (playingId === id) {
+      audioRef.current?.pause();
+      setPlayingId(null);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    const audio = new Audio(`/api/audio/${r2Key}`);
+    audio.onended = () => setPlayingId(null);
+    audio.play().catch(e => {
+      toast.error("Could not play audio");
+      setPlayingId(null);
+    });
+    audioRef.current = audio;
+    setPlayingId(id);
   };
 
   const usageCount = planData?.usageCount || 0;
@@ -195,36 +234,6 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Model Tech Pipeline */}
-      <div className="bg-white/40 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-6 shadow-xs relative overflow-hidden">
-        <h3 className="text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-6 flex items-center gap-2 relative z-10">
-          <Layers className="h-4.5 w-4.5 text-violet-500" />
-          The Voicey Processing Pipeline
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center relative z-10">
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 1</div>
-            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Text Input</div>
-            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Form validation and sanitization</div>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 2</div>
-            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Preprocessing</div>
-            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Syntactic analysis and normalization</div>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 3</div>
-            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Chatterbox GPU</div>
-            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Modal container synthesizes audio</div>
-          </div>
-          <div className="bg-white dark:bg-zinc-900 border border-zinc-150 dark:border-zinc-800 hover:border-violet-300 dark:hover:border-violet-850 hover:shadow-md rounded-xl p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:-translate-y-0.5">
-            <div className="text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-widest">Step 4</div>
-            <div className="font-extrabold text-zinc-850 dark:text-zinc-250 text-sm">Waveform Synthesis</div>
-            <div className="text-[10px] text-zinc-455 dark:text-zinc-400 font-medium">Audio playback & WAV streaming</div>
-          </div>
-        </div>
-      </div>
-
       {/* Recent Activity */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
@@ -263,11 +272,25 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </div>
-                {gen.duration && (
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 px-2.5 py-0.5 rounded-full border border-zinc-200/60 dark:border-zinc-800/60 font-bold flex-shrink-0 shadow-2xs">
-                    {gen.duration}s
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {gen.duration && (
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-950 px-2.5 py-0.5 rounded-full border border-zinc-200/60 dark:border-zinc-800/60 font-bold flex-shrink-0 shadow-2xs">
+                      {gen.duration}s
+                    </span>
+                  )}
+                  <Button
+                    onClick={() => playAudio(gen.id, gen.r2Key)}
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-zinc-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-all rounded-full"
+                  >
+                    {playingId === gen.id ? (
+                      <Pause className="h-4 w-4 fill-current" />
+                    ) : (
+                      <Play className="h-4 w-4 fill-current ml-0.5" />
+                    )}
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

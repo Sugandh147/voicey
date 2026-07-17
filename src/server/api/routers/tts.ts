@@ -182,4 +182,22 @@ export const ttsRouter = router({
       },
     });
   }),
+
+  migrateMockData: protectedProcedure.mutation(async ({ ctx }) => {
+    const user = ctx.dbUser;
+    
+    // Transfer voices
+    await ctx.prisma.voice.updateMany({
+      where: { userId: "mock_user_123" },
+      data: { userId: user.id }
+    });
+
+    // Transfer generations
+    const updatedGenerations = await ctx.prisma.generation.updateMany({
+      where: { userId: "mock_user_123" },
+      data: { userId: user.id }
+    });
+
+    return { migratedCount: updatedGenerations.count };
+  }),
 });
