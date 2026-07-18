@@ -2,7 +2,9 @@ export async function generateSpeechFromModal(
   text: string,
   voiceSampleUrl?: string | null,
   voiceSampleBase64?: string | null,
-  exaggeration: number = 0.5
+  exaggeration: number = 0.5,
+  emotion: string = "cheerful",
+  tone: string = "podcast"
 ): Promise<Buffer> {
   const modalUrl = process.env.MODAL_GENERATION_URL;
   if (!modalUrl) {
@@ -22,6 +24,8 @@ export async function generateSpeechFromModal(
       audio_url: voiceSampleUrl || null,
       audio_base64: voiceSampleBase64 || null,
       exaggeration,
+      emotion,
+      tone,
     }),
   });
 

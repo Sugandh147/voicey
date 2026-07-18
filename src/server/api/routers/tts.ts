@@ -147,15 +147,14 @@ export const ttsRouter = router({
           duration = Math.max(2.0, Math.round((wordCount / 2.5) * 10) / 10);
         } else {
           // Generate audio from Modal (zero-shot TTS)
-          // Since ChatterboxTTS is an LLM-based TTS, we can condition the tone by prepending an emotion tag
-          let textWithEmotion = translatedText;
-          if (emotion && emotion !== "neutral") {
-            const formattedEmotion = emotion.replace("_", " ").toLowerCase();
-            // e.g., [Cheerful] or [Fully expressive]
-            textWithEmotion = `[${formattedEmotion.charAt(0).toUpperCase() + formattedEmotion.slice(1)}] ${translatedText}`;
-          }
-
-          const audioBuffer = await generateSpeechFromModal(textWithEmotion, voiceSampleUrl, voiceSampleBase64, exaggeration);
+          const audioBuffer = await generateSpeechFromModal(
+            translatedText, 
+            voiceSampleUrl, 
+            voiceSampleBase64, 
+            exaggeration,
+            emotion,
+            tone
+          );
 
           finalR2Key = `generations/${user.id}/${generationId}.wav`;
           

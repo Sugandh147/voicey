@@ -16,6 +16,7 @@ model_image = (
         "requests",
         "fastapi[standard]",
         "pydantic",
+        "librosa",
     )
 )
 
@@ -29,11 +30,18 @@ def generate_speech_gpu(
     audio_prompt_url: str = None,
     audio_prompt_base64: str = None,
     exaggeration: float = 0.5,
+    emotion: str = "cheerful",
+    tone: str = "podcast",
 ) -> bytes:
-    """Synthesize speech on GPU and return raw WAV bytes."""
+    """Synthesize speech on GPU, apply perfect emotion styling, and return raw WAV bytes."""
     import torchaudio
     import chatterbox.tts
     from chatterbox.tts import ChatterboxTTS
+    import io
+    import soundfile as sf
+    import librosa
+    import math
+    import numpy as np
 
     # FIX for resemble-perth NoneType error in Modal/Linux
     class DummyWatermarker:
@@ -68,17 +76,95 @@ def generate_speech_gpu(
                 f.write(resp.read())
         audio_prompt_path = tmp.name
         print(f"Downloaded audio prompt to {audio_prompt_path}")
+        
+    # Inject style tag directly for zero-shot text condition as well
+    if emotion and emotion.lower() != "neutral":
+        formatted_emotion = emotion.replace("_", " ").lower()
+        text = f"[{formatted_emotion.capitalize()}] {text}"
 
-    wav = model.generate(
-        text,
+    # Generate raw audio
+    wav_tensor = model.generate(
+        text=text,
         audio_prompt_path=audio_prompt_path,
         exaggeration=exaggeration,
     )
+    
+    sample_rate = model.sr
+    audio_wav = wav_tensor.squeeze().cpu().numpy()
 
-    import soundfile as sf
-    buf = io.BytesIO()
-    sf.write(buf, wav.squeeze().cpu().numpy(), model.sr, format='WAV')
-    return buf.getvalue()
+    
+    # ---------------------------------------------------------
+    # Apply Perfect Emotion & Tone Audio Manipulation
+    # ---------------------------------------------------------
+    pitch_multiplier = 1.0
+    rate_multiplier = 1.0
+
+    selected_emotion = emotion.lower() if emotion else "cheerful"
+
+    if selected_emotion == "cheerful":
+        pitch_multiplier *= 1.20
+        rate_multiplier *= 1.08
+    elif selected_emotion == "serious":
+        pitch_multiplier *= 0.82
+        rate_multiplier *= 0.86
+    elif selected_emotion == "monotone":
+        pitch_multiplier = 0.90
+        rate_multiplier = 0.92
+    elif selected_emotion == "fully_expressive":
+        pitch_multiplier *= 1.35
+        rate_multiplier *= 1.15
+    elif selected_emotion == "melodious":
+        pitch_multiplier *= 1.10
+        rate_multiplier *= 0.92
+    elif selected_emotion == "whispering":
+        pitch_multiplier *= 0.90
+        rate_multiplier *= 0.72
+    elif selected_emotion == "singing":
+        pitch_multiplier *= 1.26
+        rate_multiplier *= 0.96
+    elif selected_emotion == "deep":
+        pitch_multiplier *= 0.60
+        rate_multiplier *= 0.80
+
+    selected_tone = tone.lower() if tone else "podcast"
+    if selected_tone == "cinematic":
+        pitch_multiplier *= 0.72
+        rate_multiplier *= 0.74
+    elif selected_tone == "documentary":
+        pitch_multiplier *= 0.90
+        rate_multiplier *= 0.86
+    elif selected_tone == "podcast":
+        pitch_multiplier *= 1.10
+        rate_multiplier *= 1.12
+    elif selected_tone == "conversational":
+        pitch_multiplier *= 0.98
+        rate_multiplier *= 1.04
+
+    exaggeration_delta = exaggeration - 0.5
+    if selected_emotion == "monotone":
+        rate_multiplier += exaggeration_delta * 0.4
+    else:
+        pitch_multiplier += exaggeration_delta * 1.50
+        rate_multiplier += exaggeration_delta * 1.10
+
+    pitch_multiplier = max(0.35, min(2.3, pitch_multiplier))
+    rate_multiplier = max(0.35, min(2.3, rate_multiplier))
+
+    # Convert audio_wav to 1D float32 numpy array for librosa
+    audio_wav = np.array(audio_wav, dtype=np.float32)
+    if len(audio_wav.shape) > 1:
+        audio_wav = audio_wav.mean(axis=1)
+
+    if abs(rate_multiplier - 1.0) > 0.01:
+        audio_wav = librosa.effects.time_stretch(y=audio_wav, rate=rate_multiplier)
+
+    if abs(pitch_multiplier - 1.0) > 0.01:
+        n_steps = 12.0 * math.log2(pitch_multiplier)
+        audio_wav = librosa.effects.pitch_shift(y=audio_wav, sr=sample_rate, n_steps=n_steps)
+
+    out_buffer = io.BytesIO()
+    sf.write(out_buffer, audio_wav, sample_rate, format="WAV")
+    return out_buffer.getvalue()
 
 
 # ─────────────────────────────────────────────
@@ -101,6 +187,8 @@ def generate_speech_web():
         audio_url: str | None = None
         audio_base64: str | None = None
         exaggeration: float = 0.5
+        emotion: str = "cheerful"
+        tone: str = "podcast"
 
     @web_app.post("/", response_class=Response)
     async def synthesize(data: SpeechRequest):
@@ -117,6 +205,8 @@ def generate_speech_web():
             audio_prompt_url=data.audio_url,
             audio_prompt_base64=data.audio_base64,
             exaggeration=data.exaggeration,
+            emotion=data.emotion,
+            tone=data.tone,
         )
 
         return Response(content=audio_bytes, media_type="audio/wav")
