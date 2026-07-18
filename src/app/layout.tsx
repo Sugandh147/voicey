@@ -11,8 +11,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Voicey - AI Voice SaaS Platform",
-  description: "Clone voices and generate realistic text-to-speech speech with zero-shot inference.",
+  title: "Voicey - Your Voice Workshop",
+  description: "Create natural, lifelike text-to-speech recordings in seconds.",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${inter.variable} font-sans bg-background text-foreground antialiased`}
+          className={`${inter.variable} font-sans bg-background text-foreground antialiased bg-gradient-to-tr from-violet-50/50 via-white to-fuchsia-50/50 dark:from-violet-950/20 dark:via-zinc-950 dark:to-fuchsia-950/20 min-h-screen`}
         >
           <Providers>
             {children}

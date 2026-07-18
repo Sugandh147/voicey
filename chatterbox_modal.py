@@ -8,9 +8,11 @@ app = modal.App("chatterbox-tts")
 # Container image with all required packages
 model_image = (
     modal.Image.debian_slim()
+    .apt_install("build-essential", "ffmpeg")
     .pip_install(
         "chatterbox-tts",
         "torchaudio",
+        "torchcodec",
         "requests",
         "fastapi[standard]",
         "pydantic",
@@ -25,16 +27,37 @@ model_image = (
 def generate_speech_gpu(
     text: str,
     audio_prompt_url: str = None,
+    audio_prompt_base64: str = None,
     exaggeration: float = 0.5,
 ) -> bytes:
     """Synthesize speech on GPU and return raw WAV bytes."""
     import torchaudio
+    import chatterbox.tts
     from chatterbox.tts import ChatterboxTTS
+
+    # FIX for resemble-perth NoneType error in Modal/Linux
+    class DummyWatermarker:
+        def __init__(self, *args, **kwargs):
+            pass
+        def apply_watermark(self, wav, *args, **kwargs):
+            return wav
+
+    if hasattr(chatterbox.tts, "perth"):
+        class DummyPerthModule:
+            PerthImplicitWatermarker = DummyWatermarker
+        chatterbox.tts.perth = DummyPerthModule
 
     model = ChatterboxTTS.from_pretrained(device="cuda")
 
     audio_prompt_path = None
-    if audio_prompt_url:
+    if audio_prompt_base64:
+        import base64
+        tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+        with open(tmp.name, "wb") as f:
+            f.write(base64.b64decode(audio_prompt_base64))
+        audio_prompt_path = tmp.name
+        print(f"Loaded audio prompt from base64 to {audio_prompt_path}")
+    elif audio_prompt_url:
         tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
         req = urllib.request.Request(
             audio_prompt_url,
@@ -52,8 +75,9 @@ def generate_speech_gpu(
         exaggeration=exaggeration,
     )
 
+    import soundfile as sf
     buf = io.BytesIO()
-    torchaudio.save(buf, wav, model.sr, format="wav")
+    sf.write(buf, wav.squeeze().cpu().numpy(), model.sr, format='WAV')
     return buf.getvalue()
 
 
@@ -75,13 +99,14 @@ def generate_speech_web():
     class SpeechRequest(BaseModel):
         text: str
         audio_url: str | None = None
+        audio_base64: str | None = None
         exaggeration: float = 0.5
 
     @web_app.post("/", response_class=Response)
     async def synthesize(data: SpeechRequest):
         """
         Generate speech from text.
-        Body: { "text": "...", "audio_url": "...", "exaggeration": 0.5 }
+        Body: { "text": "...", "audio_url": "...", "audio_base64": "...", "exaggeration": 0.5 }
         Returns: audio/wav
         """
         if not data.text.strip():
@@ -90,6 +115,7 @@ def generate_speech_web():
         audio_bytes: bytes = generate_speech_gpu.remote(
             text=data.text,
             audio_prompt_url=data.audio_url,
+            audio_prompt_base64=data.audio_base64,
             exaggeration=data.exaggeration,
         )
 

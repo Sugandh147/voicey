@@ -210,7 +210,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent className="text-xs text-zinc-550 dark:text-zinc-400 space-y-3.5 leading-relaxed font-medium">
             <p>
-              Inference is handled serverless on Modal with <strong className="text-zinc-800 dark:text-zinc-200 font-bold">A10G GPU acceleration</strong>. 
+              Your voices are processed instantly in the cloud, delivering natural audio in seconds. 
             </p>
             <div className="flex items-center gap-2.5 bg-zinc-50 dark:bg-zinc-800/40 p-2.5 border border-zinc-150 dark:border-zinc-800 rounded-lg animate-pulse-glow">
               <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -255,11 +255,11 @@ export default function DashboardPage() {
             <Skeleton className="h-16 w-full bg-zinc-200/60 dark:bg-zinc-800/60 animate-pulse" />
           </div>
         ) : generations && generations.length > 0 ? (
-          <div className="grid gap-3">
+          <div className="grid gap-3 w-full min-w-0">
             {generations.slice(0, 3).map((gen) => (
               <div 
                 key={gen.id}
-                className="flex justify-between items-center p-4 bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/85 dark:border-zinc-800 hover:border-violet-250 dark:hover:border-violet-850 hover:shadow-xs rounded-xl shadow-xs transition-all duration-300 hover:translate-x-0.5"
+                className="flex justify-between items-center w-full min-w-0 p-4 bg-white/95 dark:bg-zinc-900/95 border border-zinc-200/85 dark:border-zinc-800 hover:border-violet-250 dark:hover:border-violet-850 hover:shadow-xs rounded-xl shadow-xs transition-all duration-300 hover:translate-x-0.5"
               >
                 <div className="flex items-center gap-3.5 flex-1 min-w-0">
                   <div className="h-9 w-9 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400 flex-shrink-0 border border-zinc-150 dark:border-zinc-800">

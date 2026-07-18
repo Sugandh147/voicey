@@ -59,19 +59,6 @@ export function rewriteTextForTone(text: string, tone: string): string {
   let cleaned = text.trim();
   if (!cleaned) return "";
 
-  // Check if it's already rewritten to prevent double-wrapping
-  if (selectedTone === "cinematic" && cleaned.startsWith('In a world of shadows, a truth emerges: "') && cleaned.endsWith('". The journey has begun, and the echo remains forever.')) {
-    return cleaned;
-  }
-  if (selectedTone === "documentary" && cleaned.startsWith('Scientific observations indicate that: "') && cleaned.endsWith('". This phenomenon continues to be scrutinized by researchers worldwide.')) {
-    return cleaned;
-  }
-  if (selectedTone === "podcast" && cleaned.startsWith('Hey guys! Check this out: "') && cleaned.endsWith('". Pretty wild, right? Let me know what you think in the comments below!')) {
-    return cleaned;
-  }
-  if (selectedTone === "conversational" && cleaned.startsWith('So basically, "') && cleaned.endsWith('". Yeah, that is about it.')) {
-    return cleaned;
-  }
 
   // Perform word replacements
   const toneSynonyms = synonyms[selectedTone];
@@ -85,17 +72,6 @@ export function rewriteTextForTone(text: string, tone: string): string {
         return replacement;
       });
     }
-  }
-
-  // Format with introductions and outros
-  if (selectedTone === "cinematic") {
-    return `In a world of shadows, a truth emerges: "${cleaned}". The journey has begun, and the echo remains forever.`;
-  } else if (selectedTone === "documentary") {
-    return `Scientific observations indicate that: "${cleaned}". This phenomenon continues to be scrutinized by researchers worldwide.`;
-  } else if (selectedTone === "podcast") {
-    return `Hey guys! Check this out: "${cleaned}". Pretty wild, right? Let me know what you think in the comments below!`;
-  } else if (selectedTone === "conversational") {
-    return `So basically, "${cleaned}". Yeah, that is about it.`;
   }
 
   return cleaned;

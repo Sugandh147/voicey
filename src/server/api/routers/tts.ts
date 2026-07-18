@@ -83,16 +83,34 @@ export const ttsRouter = router({
         }
       }
 
-      // If voice has an R2 key (cloned voice), get download url
+      // If voice has an R2 key (cloned voice), get download url or load it locally
       let voiceSampleUrl: string | undefined = undefined;
-      const isConfigured = !!process.env.CLOUDFLARE_R2_BUCKET && !!process.env.MODAL_GENERATION_URL;
-
+      let voiceSampleBase64: string | undefined = undefined;
+      const isConfigured = !!process.env.MODAL_GENERATION_URL;
+      const hasR2 = !!process.env.CLOUDFLARE_R2_BUCKET;
+      
       if (voice.r2Key) {
-        if (isConfigured && !voice.r2Key.startsWith("demo-voice-key-")) {
+        if (hasR2 && !voice.r2Key.startsWith("demo-voice-key-")) {
           voiceSampleUrl = await getPresignedDownloadUrl(voice.r2Key);
         } else {
-          // Fallback voice sample url in demo mode
-          voiceSampleUrl = "https://www2.cs.uic.edu/~i101/SoundFiles/preamble10.wav";
+          // If it's a real generation but we don't have R2, it's stored locally
+          // Or if it's a demo key, it's also local. We load it as Base64 for Modal!
+          try {
+            let filePath = "";
+            if (voice.r2Key.startsWith("demo-voice-key-")) {
+              filePath = path.join(process.cwd(), "public", "demo-voices", `${voice.r2Key}.wav`);
+            } else {
+              const r2KeyWithoutWav = voice.r2Key.replace(".wav", "");
+              filePath = path.join(process.cwd(), "public", "demo-voices", `${r2KeyWithoutWav}.wav`);
+            }
+            if (fs.existsSync(filePath)) {
+              voiceSampleBase64 = fs.readFileSync(filePath).toString("base64");
+            }
+          } catch (e) {
+            console.error("Failed to load local voice file to Base64", e);
+          }
+          // Optional: fallback url just in case
+          voiceSampleUrl = `http://127.0.0.1:3000/api/audio/${voice.r2Key}`;
         }
       }
 
@@ -100,7 +118,8 @@ export const ttsRouter = router({
         let audioUrl = "";
         let duration = 5.0;
         const generationId = crypto.randomUUID();
-        const r2Key = `demo-generations/${generationId}.mp3`;
+        const fallbackR2Key = `demo-generations/${generationId}.mp3`;
+        let finalR2Key = fallbackR2Key;
 
         if (!isConfigured) {
           console.warn("⚠️ Voicey running in Demo mode: Generating speech locally.");
@@ -123,16 +142,37 @@ export const ttsRouter = router({
           const filePath = path.join(dir, `${generationId}.mp3`);
           fs.writeFileSync(filePath, localTtsResult.buffer);
 
-          audioUrl = `/api/audio/${r2Key}`;
+          audioUrl = `/api/audio/${fallbackR2Key}`;
           const wordCount = translatedText.split(/\s+/).length;
           duration = Math.max(2.0, Math.round((wordCount / 2.5) * 10) / 10);
         } else {
           // Generate audio from Modal (zero-shot TTS)
-          const audioBuffer = await generateSpeechFromModal(translatedText, voiceSampleUrl, exaggeration);
+          // Since ChatterboxTTS is an LLM-based TTS, we can condition the tone by prepending an emotion tag
+          let textWithEmotion = translatedText;
+          if (emotion && emotion !== "neutral") {
+            const formattedEmotion = emotion.replace("_", " ").toLowerCase();
+            // e.g., [Cheerful] or [Fully expressive]
+            textWithEmotion = `[${formattedEmotion.charAt(0).toUpperCase() + formattedEmotion.slice(1)}] ${translatedText}`;
+          }
 
-          // Upload to R2
-          const r2RealKey = `generations/${user.id}/${generationId}.wav`;
-          audioUrl = await uploadToR2(r2RealKey, audioBuffer, "audio/wav");
+          const audioBuffer = await generateSpeechFromModal(textWithEmotion, voiceSampleUrl, voiceSampleBase64, exaggeration);
+
+          finalR2Key = `generations/${user.id}/${generationId}.wav`;
+          
+          if (hasR2) {
+            // Upload to R2
+            audioUrl = await uploadToR2(finalR2Key, audioBuffer, "audio/wav");
+          } else {
+            // Save locally
+            const dir = path.join(process.cwd(), "public", "generations", user.id);
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true });
+            }
+            const filePath = path.join(dir, `${generationId}.wav`);
+            fs.writeFileSync(filePath, audioBuffer);
+            audioUrl = `/api/audio/${finalR2Key}`;
+          }
+          
           duration = Math.round((audioBuffer.length / 32000) * 10) / 10;
         }
 
@@ -142,7 +182,7 @@ export const ttsRouter = router({
             userId: user.id,
             text: translatedText,
             voiceId,
-            r2Key: isConfigured ? `generations/${user.id}/${generationId}.wav` : r2Key,
+            r2Key: finalR2Key,
             duration,
             targetLang: targetLang || "en",
             tone: tone || "podcast",

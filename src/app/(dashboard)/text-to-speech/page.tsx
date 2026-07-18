@@ -201,10 +201,12 @@ export default function TextToSpeechPage() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-zinc-800 dark:text-zinc-100">Text to Speech</h1>
-        <p className="text-zinc-500 dark:text-zinc-400 text-sm font-medium mt-1">
-          Synthesize high-fidelity voice files using our Chatterbox serverless engine.
-        </p>
+        <div className="max-w-2xl">
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2">Text to Speech</h1>
+          <p className="text-zinc-500 dark:text-zinc-400">
+          Convert your text into natural, lifelike speech in seconds.
+          </p>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
@@ -450,7 +452,7 @@ export default function TextToSpeechPage() {
                 </div>
                 <div className="flex justify-between">
                   <span>Category:</span>
-                  <span className="text-zinc-800 dark:text-zinc-200 font-bold">{selectedVoice.isSystem ? "Preloaded Studio" : "Zero-Shot Clone"}</span>
+                  <span className="text-zinc-800 dark:text-zinc-200 font-bold">{selectedVoice.isSystem ? "Preloaded Studio" : "Custom Voice"}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Status:</span>
@@ -493,14 +495,14 @@ export default function TextToSpeechPage() {
             <Skeleton className="h-16 w-full bg-zinc-200/60 dark:bg-zinc-800/60 animate-pulse" />
           </div>
         ) : generations && generations.length > 0 ? (
-          <div className="grid gap-3">
+          <div className="grid gap-3 w-full min-w-0">
             {generations.map((gen: any) => {
               const audioUrl = getAudioUrl(gen.r2Key);
               const langDetails = getLanguageDetails(gen.targetLang || "en");
               return (
                 <div 
                   key={gen.id}
-                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-violet-200 dark:hover:border-violet-850 hover:shadow-xs shadow-xs rounded-xl gap-4 transition-all duration-300 hover:translate-x-0.5"
+                  className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full min-w-0 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-violet-200 dark:hover:border-violet-850 hover:shadow-xs shadow-xs rounded-xl gap-4 transition-all duration-300 hover:translate-x-0.5"
                 >
                   <div className="flex items-center gap-3.5 flex-1 min-w-0 w-full">
                     <div className="h-9 w-9 rounded-lg bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center text-zinc-500 dark:text-zinc-400 shrink-0 border border-zinc-150 dark:border-zinc-800">

@@ -157,9 +157,6 @@ export async function GET(
       });
     }
 
-    // Basic verification:
-    // If the path is a user generation/voice, ensure they own it.
-    // System voices (isSystem = true) are public.
     const isVoicePath = r2Key.startsWith("voices/");
     const isGenPath = r2Key.startsWith("generations/");
 
@@ -190,10 +187,36 @@ export async function GET(
       }
     }
 
-    const fileBuffer = await getR2FileBuffer(r2Key);
-    return new Response(new Uint8Array(fileBuffer), {
-      headers: getResponseHeaders("audio/wav"),
-    });
+    try {
+      const fileBuffer = await getR2FileBuffer(r2Key);
+      return new Response(new Uint8Array(fileBuffer), {
+        headers: getResponseHeaders("audio/wav"),
+      });
+    } catch (r2Error) {
+      // Fallback to local file system if R2 is not configured or file is local
+      const fs = require("fs");
+      const path = require("path");
+      
+      // Attempt 1: Check in public/
+      let localPath = path.join(process.cwd(), "public", r2Key);
+      
+      // For mock uploaded voices, they are saved as {key}.wav inside demo-voices
+      // e.g. voices/user/uuid.wav -> public/demo-voices/voices/user/uuid.wav
+      if (!fs.existsSync(localPath) && isVoicePath) {
+        const r2KeyWithoutWav = r2Key.replace(".wav", "");
+        localPath = path.join(process.cwd(), "public", "demo-voices", `${r2KeyWithoutWav}.wav`);
+      }
+
+      if (fs.existsSync(localPath)) {
+        const fileBuffer = fs.readFileSync(localPath);
+        return new Response(new Uint8Array(fileBuffer), {
+          headers: getResponseHeaders("audio/wav"),
+        });
+      }
+      
+      console.error("Audio proxy file fetch error:", r2Error);
+      return new Response("Audio file not found", { status: 404 });
+    }
   } catch (error) {
     console.error("Audio proxy file fetch error:", error);
     return new Response("Audio file not found", { status: 404 });

@@ -354,7 +354,7 @@ export function WaveformPlayer({
       setIsReady(true);
 
       // If it is demo fallback, trigger local SpeechSynthesis read aloud
-      if (src.includes("demo-fallback-key") && text) {
+      if (src.includes("demo-generations") && text) {
         speakFallbackText(
           text,
           voiceName,
@@ -390,7 +390,7 @@ export function WaveformPlayer({
   }, [src, text, voiceName, exaggeration, lang, tone, emotion]);
 
   const togglePlay = () => {
-    if (src.includes("demo-fallback-key") && text) {
+    if (src.includes("demo-generations") && text) {
       if (isPlaying) {
         window.speechSynthesis.cancel();
         if (wavesurferRef.current) {

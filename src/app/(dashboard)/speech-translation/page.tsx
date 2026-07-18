@@ -488,7 +488,7 @@ export default function SpeechTranslationPage() {
             <Skeleton className="h-20 w-full bg-zinc-200/60 dark:bg-zinc-800/60 animate-pulse" />
           </div>
         ) : history && history.length > 0 ? (
-          <div className="grid gap-3">
+          <div className="grid gap-3 w-full min-w-0">
             {history.map((item: any) => {
               const srcDetails = getLanguageDetails(item.sourceLang);
               const tgtDetails = getLanguageDetails(item.targetLang);

@@ -242,7 +242,7 @@ export default function VoicesPage() {
             <DialogHeader>
               <DialogTitle className="text-lg font-bold text-zinc-800 dark:text-zinc-100">Clone New Voice</DialogTitle>
               <DialogDescription className="text-zinc-500 dark:text-zinc-400 text-xs font-semibold">
-                Upload or record a 5–30s high-quality WAV/MP3 voice sample. Our zero-shot engine will model the voice characteristics automatically.
+                Upload or record a 5–30s clear voice sample. Our system will instantly clone the voice characteristics for you to use.
               </DialogDescription>
             </DialogHeader>
 
@@ -404,7 +404,7 @@ export default function VoicesPage() {
               <CardContent className="pb-4">
                 <div className="flex items-center gap-2.5 text-xs text-zinc-500 dark:text-zinc-400 font-bold">
                   <PlayCircle className="h-4.5 w-4.5 text-zinc-400 dark:text-zinc-500 animate-float" />
-                  <span>Ready for zero-shot synthesis</span>
+                  <span>Ready to use</span>
                 </div>
               </CardContent>
 

@@ -42,12 +42,13 @@ export const voicesRouter = router({
       const randomId = crypto.randomUUID();
       const r2Key = `voices/${ctx.dbUser.id}/${randomId}.${fileExtension}`;
 
-      const isConfigured = !!process.env.CLOUDFLARE_R2_BUCKET && !!process.env.CLOUDFLARE_R2_ACCOUNT_ID;
+      const isConfigured = !!process.env.MODAL_GENERATION_URL;
+      const hasR2 = !!process.env.CLOUDFLARE_R2_BUCKET && !!process.env.CLOUDFLARE_R2_ACCOUNT_ID;
 
-      if (!isConfigured) {
+      if (!hasR2) {
         return {
-          uploadUrl: `/api/mock-upload?key=demo-voice-key-${randomId}`,
-          r2Key: `demo-voice-key-${randomId}`,
+          uploadUrl: `/api/mock-upload?key=${r2Key.replace('.wav', '')}`,
+          r2Key,
         };
       }
 
