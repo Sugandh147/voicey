@@ -7,7 +7,17 @@ const isPublicRoute = createRouteMatcher([
   "/api/webhooks(.*)"
 ]);
 
+const isDummyClerk =
+  !process.env.CLERK_SECRET_KEY ||
+  process.env.CLERK_SECRET_KEY === "sk_test_dummy" ||
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes("dummy");
+
 export default clerkMiddleware(async (auth, req) => {
+  // Allow access in local mock mode
+  if (isDummyClerk) {
+    return NextResponse.next();
+  }
+
   // Allow access to public routes
   if (isPublicRoute(req)) {
     return NextResponse.next();
