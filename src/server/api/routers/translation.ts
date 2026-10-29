@@ -21,18 +21,21 @@ export const translationRouter = router({
           throw new Error(`Translation API returned status: ${response.status}`);
         }
         
-        const data = await response.json();
-        if (!data || !data[0]) {
+        const data = (await response.json()) as unknown[][];
+        if (!data || !Array.isArray(data[0])) {
           throw new Error("Invalid response format from translation service");
         }
         
-        const translatedText = data[0].map((item: any) => item[0] || "").join("");
+        const translatedText = data[0]
+          .map((item) => (Array.isArray(item) && typeof item[0] === "string" ? item[0] : ""))
+          .join("");
         return { translatedText };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Translation API fetch error:", error);
+        const message = error instanceof Error ? error.message : "Failed to translate text. Please try again.";
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to translate text. Please try again.",
+          message,
         });
       }
     }),
@@ -59,7 +62,7 @@ export const translationRouter = router({
           },
         });
         return translation;
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error creating database translation record:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",

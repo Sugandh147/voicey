@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import {
   Zap,
   X,
@@ -64,9 +64,7 @@ export default function ProUpgradeModal({
   const [selectedBank, setSelectedBank] = useState("");
   const [processingProgress, setProcessingProgress] = useState(0);
   const [upiError, setUpiError] = useState("");
-  const paymentIdRef = useRef(
-    `VCY-${Math.random().toString(36).slice(2, 10).toUpperCase()}`
-  );
+  const [paymentId, setPaymentId] = useState("VCY-PRO-PAYMENT");
 
   const utils = trpc.useUtils();
 
@@ -108,6 +106,7 @@ export default function ProUpgradeModal({
         clearInterval(interval);
         setProcessingProgress(100);
         setTimeout(() => {
+          setPaymentId(`VCY-${Date.now().toString(36).toUpperCase()}`);
           // ✅ Actually update the DB so plan shows PRO
           upgradeMutation.mutate();
           setStep("success");
@@ -494,7 +493,7 @@ export default function ProUpgradeModal({
             <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-200 rounded-full mb-8">
               <Check className="h-3.5 w-3.5 text-emerald-600" />
               <span className="text-xs font-bold text-emerald-700">
-                Payment ID: {paymentIdRef.current}
+                Payment ID: {paymentId}
               </span>
             </div>
 

@@ -3,7 +3,6 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure } from "../../trpc";
 import { generateSpeechFromModal } from "@/lib/modal";
 import { uploadToR2, getPresignedDownloadUrl } from "@/lib/r2";
-import { rewriteTextForTone } from "@/lib/rewriter";
 import { generateSpeechLocal } from "@/lib/tts-local";
 import fs from "fs";
 import path from "path";
@@ -64,7 +63,7 @@ export const ttsRouter = router({
       // In demo mode, we do NOT automatically rewrite text on the server.
       // The frontend handles auto-rewriting when 'Auto-Rewrite on Tone Change' is enabled.
       // This allows the user to speak exactly what they type.
-      let processedText = text;
+      const processedText = text;
 
       // Translation step
       let translatedText = processedText;
@@ -73,9 +72,12 @@ export const ttsRouter = router({
           const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(processedText)}`;
           const response = await fetch(url);
           if (response.ok) {
-            const data = await response.json();
-            if (data && data[0]) {
-              translatedText = data[0].map((item: any) => item[0] || "").join("").trim();
+            const data = (await response.json()) as unknown[][];
+            if (data && Array.isArray(data[0])) {
+              translatedText = data[0]
+                .map((item) => (Array.isArray(item) && typeof item[0] === "string" ? item[0] : ""))
+                .join("")
+                .trim();
             }
           }
         } catch (error) {
@@ -203,11 +205,12 @@ export const ttsRouter = router({
           ...generation,
           url: audioUrl,
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Speech generation error:", error);
+        const message = error instanceof Error ? error.message : "Failed to generate speech. Please try again later.";
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to generate speech. Please try again later.",
+          message,
         });
       }
     }),

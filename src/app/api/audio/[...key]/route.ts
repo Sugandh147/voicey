@@ -3,6 +3,8 @@ import { getR2FileBuffer } from "@/lib/r2";
 import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { generateSpeechLocal } from "@/lib/tts-local";
+import fs from "fs";
+import path from "path";
 
 function generateSilenceWav(duration: number): Buffer {
   const sampleRate = 44100;
@@ -71,8 +73,6 @@ export async function GET(
 
   try {
     if (r2Key.startsWith("demo-generations/")) {
-      const fs = require("fs");
-      const path = require("path");
       const filePath = path.join(process.cwd(), "public", r2Key);
       
       if (!fs.existsSync(filePath)) {
@@ -126,8 +126,6 @@ export async function GET(
     
     if (isDemoKey) {
       if (r2Key.startsWith("demo-voice-key-")) {
-        const fs = require("fs");
-        const path = require("path");
         const filePath = path.join(process.cwd(), "public", "demo-voices", `${r2Key}.wav`);
         if (fs.existsSync(filePath)) {
           const fileBuffer = fs.readFileSync(filePath);
@@ -194,9 +192,6 @@ export async function GET(
       });
     } catch (r2Error) {
       // Fallback to local file system if R2 is not configured or file is local
-      const fs = require("fs");
-      const path = require("path");
-      
       // Attempt 1: Check in public/
       let localPath = path.join(process.cwd(), "public", r2Key);
       

@@ -6,7 +6,6 @@ import {
   Card, 
   CardHeader, 
   CardTitle, 
-  CardDescription, 
   CardContent 
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,11 +82,14 @@ export default function SpeechTranslationPage() {
   const [sourceLang, setSourceLang] = useState("en");
   const [targetLang, setTargetLang] = useState("es");
   const [isRecording, setIsRecording] = useState(false);
-  const [recognitionActive, setRecognitionActive] = useState(false);
   const [speechVoices, setSpeechVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<{
+    lang: string;
+    start: () => void;
+    stop: () => void;
+  } | null>(null);
 
   // Queries & Mutations
   const { data: history, isLoading: historyLoading, refetch: refetchHistory } = trpc.translation.getTranslations.useQuery();
@@ -117,26 +119,41 @@ export default function SpeechTranslationPage() {
   // Initialize browser Web Speech Recognition
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      const win = window as unknown as {
+        SpeechRecognition?: new () => {
+          continuous: boolean;
+          interimResults: boolean;
+          lang: string;
+          onresult: ((event: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; [index: number]: { transcript: string } }> }) => void) | null;
+          onerror: ((event: { error: string }) => void) | null;
+          onend: (() => void) | null;
+          start: () => void;
+          stop: () => void;
+        };
+        webkitSpeechRecognition?: new () => {
+          continuous: boolean;
+          interimResults: boolean;
+          lang: string;
+          onresult: ((event: { resultIndex: number; results: ArrayLike<{ isFinal: boolean; [index: number]: { transcript: string } }> }) => void) | null;
+          onerror: ((event: { error: string }) => void) | null;
+          onend: (() => void) | null;
+          start: () => void;
+          stop: () => void;
+        };
+      };
+      const SpeechRecognition = win.SpeechRecognition || win.webkitSpeechRecognition;
       if (SpeechRecognition) {
         const rec = new SpeechRecognition();
         rec.continuous = true;
         rec.interimResults = true;
         rec.lang = sourceLang;
 
-        rec.onstart = () => {
-          setRecognitionActive(true);
-        };
-
-        rec.onresult = (event: any) => {
-          let interimTranscript = "";
+        rec.onresult = (event) => {
           let finalTranscript = "";
 
           for (let i = event.resultIndex; i < event.results.length; ++i) {
             if (event.results[i].isFinal) {
               finalTranscript += event.results[i][0].transcript;
-            } else {
-              interimTranscript += event.results[i][0].transcript;
             }
           }
 
@@ -148,7 +165,7 @@ export default function SpeechTranslationPage() {
           }
         };
 
-        rec.onerror = (event: any) => {
+        rec.onerror = (event) => {
           console.error("Speech Recognition Error:", event.error);
           if (event.error === "not-allowed") {
             toast.error("Microphone access denied. Please grant microphone permissions.");
@@ -159,7 +176,6 @@ export default function SpeechTranslationPage() {
         };
 
         rec.onend = () => {
-          setRecognitionActive(false);
           setIsRecording(false);
         };
 
@@ -176,7 +192,7 @@ export default function SpeechTranslationPage() {
         // Restart recognition with new language
         recognitionRef.current.stop();
         setTimeout(() => {
-          recognitionRef.current.start();
+          recognitionRef.current?.start();
         }, 300);
       }
     }
@@ -233,9 +249,10 @@ export default function SpeechTranslationPage() {
 
       toast.success("Translation completed successfully!", { id: loaderId });
       refetchHistory();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to translate speech.", { id: loaderId });
+      const msg = err instanceof Error ? err.message : "Failed to translate speech.";
+      toast.error(msg, { id: loaderId });
     }
   };
 
@@ -460,7 +477,7 @@ export default function SpeechTranslationPage() {
             </h4>
             <div className="space-y-3 text-zinc-500 dark:text-zinc-400 text-xs font-semibold leading-relaxed">
               <p>
-                Our speech translation system relies on your device's browser capabilities for real-time speech-to-text.
+                Our speech translation system relies on your device&apos;s browser capabilities for real-time speech-to-text.
               </p>
               <div className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-950 p-2.5 rounded-lg border border-zinc-150 dark:border-zinc-800">
                 <span className="font-bold text-zinc-700 dark:text-zinc-350">Accented Playback:</span>
@@ -489,7 +506,7 @@ export default function SpeechTranslationPage() {
           </div>
         ) : history && history.length > 0 ? (
           <div className="grid gap-3 w-full min-w-0">
-            {history.map((item: any) => {
+            {history.map((item) => {
               const srcDetails = getLanguageDetails(item.sourceLang);
               const tgtDetails = getLanguageDetails(item.targetLang);
               return (
@@ -513,11 +530,11 @@ export default function SpeechTranslationPage() {
                     <div className="grid sm:grid-cols-2 gap-3 text-xs">
                       <div>
                         <span className="text-[10px] font-bold text-zinc-450 dark:text-zinc-550 block">Original</span>
-                        <p className="font-semibold text-zinc-700 dark:text-zinc-350 truncate">"{item.sourceText}"</p>
+                        <p className="font-semibold text-zinc-700 dark:text-zinc-350 truncate">&ldquo;{item.sourceText}&rdquo;</p>
                       </div>
                       <div className="border-t sm:border-t-0 sm:border-l border-zinc-100 dark:border-zinc-850 pt-2 sm:pt-0 sm:pl-3">
                         <span className="text-[10px] font-bold text-violet-500/80 dark:text-violet-400/80 block">Translated</span>
-                        <p className="font-extrabold text-violet-650 dark:text-violet-300 truncate">"{item.targetText}"</p>
+                        <p className="font-extrabold text-violet-650 dark:text-violet-300 truncate">&ldquo;{item.targetText}&rdquo;</p>
                       </div>
                     </div>
                   </div>

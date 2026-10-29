@@ -42,7 +42,6 @@ export const voicesRouter = router({
       const randomId = crypto.randomUUID();
       const r2Key = `voices/${ctx.dbUser.id}/${randomId}.${fileExtension}`;
 
-      const isConfigured = !!process.env.MODAL_GENERATION_URL;
       const hasR2 = !!process.env.CLOUDFLARE_R2_BUCKET && !!process.env.CLOUDFLARE_R2_ACCOUNT_ID;
 
       if (!hasR2) {

@@ -33,11 +33,12 @@ export const billingRouter = router({
         });
 
         return { checkoutUrl };
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error creating checkout session:", error);
+        const message = error instanceof Error ? error.message : "Failed to create subscription checkout link.";
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: error.message || "Failed to create subscription checkout link.",
+          message,
         });
       }
     }),

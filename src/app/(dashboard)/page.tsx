@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc";
 import { 
@@ -13,20 +12,18 @@ import {
   ArrowRight,
   TrendingUp,
   Cpu,
-  Layers,
   Volume2,
   Play,
   Pause
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import ProUpgradeModal from "@/components/ProUpgradeModal";
 
 export default function DashboardPage() {
-  const router = useRouter();
   const { user } = useUser();
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -84,7 +81,7 @@ export default function DashboardPage() {
     }
     const audio = new Audio(`/api/audio/${r2Key}`);
     audio.onended = () => setPlayingId(null);
-    audio.play().catch(e => {
+    audio.play().catch(() => {
       toast.error("Could not play audio");
       setPlayingId(null);
     });
@@ -266,7 +263,7 @@ export default function DashboardPage() {
                     <Volume2 className="h-4.5 w-4.5 text-zinc-500 dark:text-zinc-400 animate-float" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-bold truncate text-zinc-850 dark:text-zinc-200 pr-4">"{gen.text}"</p>
+                    <p className="text-sm font-bold truncate text-zinc-850 dark:text-zinc-200 pr-4">&ldquo;{gen.text}&rdquo;</p>
                     <p className="text-[10px] text-zinc-550 dark:text-zinc-450 font-bold">
                       Voice: <strong className="text-zinc-700 dark:text-zinc-300 font-bold">{gen.voice?.name || "Deleted"}</strong> • {new Date(gen.createdAt).toLocaleDateString()}
                     </p>

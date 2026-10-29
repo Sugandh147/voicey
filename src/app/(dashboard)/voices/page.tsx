@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { 
   Card, 
@@ -64,15 +64,6 @@ export default function VoicesPage() {
     }
   });
 
-  // Handle Dialog reset on close
-  useEffect(() => {
-    if (!isDialogOpen) {
-      setVoiceName("");
-      setUploadFile(null);
-      resetRecorder();
-    }
-  }, [isDialogOpen]);
-
   const resetRecorder = () => {
     if (timerRef.current) clearInterval(timerRef.current);
     if (streamRef.current) {
@@ -84,6 +75,15 @@ export default function VoicesPage() {
     setRecordedUrl(null);
     mediaRecorderRef.current = null;
     streamRef.current = null;
+  };
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setVoiceName("");
+      setUploadFile(null);
+      resetRecorder();
+    }
   };
 
   // Start microphone recording
@@ -201,9 +201,10 @@ export default function VoicesPage() {
       toast.success("Voice successfully added to library!", { id: loadingToastId });
       setIsDialogOpen(false);
       refetchVoices();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Cloning error:", error);
-      toast.error(error.message || "Failed to clone voice sample. Please try again.", { id: loadingToastId });
+      const msg = error instanceof Error ? error.message : "Failed to clone voice sample. Please try again.";
+      toast.error(msg, { id: loadingToastId });
     } finally {
       setIsSubmitting(false);
     }
@@ -230,7 +231,7 @@ export default function VoicesPage() {
         </div>
         
         {/* Dialog to Add/Clone Voice */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold gap-1.5 h-10 px-4 active:scale-98 transition-all duration-300 shadow-md shadow-violet-500/10 hover:shadow-lg hover:shadow-violet-500/20 cursor-pointer">
               <Plus className="h-4.5 w-4.5" />

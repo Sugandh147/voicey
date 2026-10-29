@@ -31,24 +31,30 @@ function verifyPolarWebhook(payload: string, signatureHeader: string, secret: st
 }
 
 /** Extract clerkUserId from wherever Polar puts it in the event payload */
-function extractClerkUserId(body: any): string | null {
+function extractClerkUserId(body: Record<string, unknown>): string | null {
   // Polar puts metadata in multiple places depending on event type
+  const b = body as {
+    data?: { metadata?: { clerkUserId?: string }; checkout?: { metadata?: { clerkUserId?: string } } };
+    metadata?: { clerkUserId?: string };
+    customer_metadata?: { clerkUserId?: string };
+  };
   return (
-    body?.data?.metadata?.clerkUserId ||
-    body?.metadata?.clerkUserId ||
-    body?.data?.checkout?.metadata?.clerkUserId ||
-    body?.data?.customer_metadata?.clerkUserId ||
+    b?.data?.metadata?.clerkUserId ||
+    b?.metadata?.clerkUserId ||
+    b?.data?.checkout?.metadata?.clerkUserId ||
+    b?.customer_metadata?.clerkUserId ||
     null
   );
 }
 
 /** Determine if an event means the user should be on PRO */
-function resolveNewPlan(eventType: string, data: any): "PRO" | "FREE" | null {
+function resolveNewPlan(eventType: string, data: Record<string, unknown>): "PRO" | "FREE" | null {
+  const d = data as { status?: string; billing_reason?: string };
   switch (eventType) {
     // Subscription events
     case "subscription.created":
     case "subscription.updated":
-      return data?.status === "active" ? "PRO" : "FREE";
+      return d?.status === "active" ? "PRO" : "FREE";
 
     case "subscription.revoked":
     case "subscription.canceled":
@@ -56,11 +62,11 @@ function resolveNewPlan(eventType: string, data: any): "PRO" | "FREE" | null {
 
     // Order / one-time purchase events (Polar fires these on checkout success)
     case "order.created":
-      return data?.status === "paid" || data?.billing_reason === "purchase" ? "PRO" : null;
+      return d?.status === "paid" || d?.billing_reason === "purchase" ? "PRO" : null;
 
     // Checkout completed
     case "checkout.updated":
-      return data?.status === "succeeded" || data?.status === "confirmed" ? "PRO" : null;
+      return d?.status === "succeeded" || d?.status === "confirmed" ? "PRO" : null;
 
     default:
       return null; // Ignore unknown events
@@ -113,7 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ received: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error handling Polar webhook:", error);
     return NextResponse.json({ error: "Webhook handler failed" }, { status: 500 });
   }

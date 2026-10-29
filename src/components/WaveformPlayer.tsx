@@ -387,7 +387,7 @@ export function WaveformPlayer({
       window.speechSynthesis.cancel();
       ws.destroy();
     };
-  }, [src, text, voiceName, exaggeration, lang, tone, emotion]);
+  }, [src, text, voiceName, exaggeration, lang, tone, emotion, browserVoices]);
 
   const togglePlay = () => {
     if (src.includes("demo-generations") && text) {

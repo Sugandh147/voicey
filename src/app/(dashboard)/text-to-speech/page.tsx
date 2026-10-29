@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { WaveformPlayer } from "@/components/WaveformPlayer";
 import { 
@@ -113,27 +113,22 @@ export default function TextToSpeechPage() {
   const { data: voices, isLoading: voicesLoading } = trpc.voices.getVoices.useQuery();
   const { data: generations, isLoading: genLoading, refetch: refetchGen } = trpc.tts.getGenerations.useQuery();
 
-  // Set default voice when loaded (supporting query parameters)
-  useEffect(() => {
-    if (voices && voices.length > 0 && !selectedVoiceId) {
-      const params = new URLSearchParams(window.location.search);
-      const queryVoiceId = params.get("voice");
-      if (queryVoiceId && voices.some((v) => v.id === queryVoiceId)) {
-        setSelectedVoiceId(queryVoiceId);
-      } else {
-        setSelectedVoiceId(voices[0].id);
-      }
-    }
-  }, [voices, selectedVoiceId]);
+  // Compute effective voice id dynamically without cascading renders
+  const effectiveVoiceId = selectedVoiceId || (voices && voices.length > 0 ? (
+    (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("voice") && voices.some((v) => v.id === new URLSearchParams(window.location.search).get("voice")))
+      ? (new URLSearchParams(window.location.search).get("voice") as string)
+      : voices[0].id
+  ) : "");
 
-  // Handle auto-rewriting when tone changes
-  useEffect(() => {
+  // Handle auto-rewriting directly when tone changes
+  const handleToneChange = (newTone: string) => {
+    setTone(newTone);
     if (autoRewrite && inputText.trim()) {
-      const rewritten = rewriteTextForTone(inputText, tone);
+      const rewritten = rewriteTextForTone(inputText, newTone);
       setInputText(rewritten);
-      toast.info(`Script rewritten in ${tone} style!`);
+      toast.info(`Script rewritten in ${newTone} style!`);
     }
-  }, [tone, autoRewrite]);
+  };
 
   // Limits
   const maxChars = planData?.plan === "PRO" ? 5000 : 500;
@@ -169,7 +164,7 @@ export default function TextToSpeechPage() {
       toast.error("Please enter some text to generate speech.");
       return;
     }
-    if (!selectedVoiceId) {
+    if (!effectiveVoiceId) {
       toast.error("Please select a voice first.");
       return;
     }
@@ -180,7 +175,7 @@ export default function TextToSpeechPage() {
 
     generateSpeechMutation.mutate({
       text: inputText,
-      voiceId: selectedVoiceId,
+      voiceId: effectiveVoiceId,
       exaggeration,
       targetLang,
       tone,
@@ -196,7 +191,7 @@ export default function TextToSpeechPage() {
     return SUPPORTED_LANGUAGES.find(l => l.code === code) || { name: code, flag: "🌐", nativeName: code };
   };
 
-  const selectedVoice = voices?.find(v => v.id === selectedVoiceId);
+  const selectedVoice = voices?.find(v => v.id === effectiveVoiceId);
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -301,7 +296,7 @@ export default function TextToSpeechPage() {
                   {voicesLoading ? (
                     <Skeleton className="h-10 w-full bg-zinc-100 dark:bg-zinc-800" />
                   ) : (
-                    <Select value={selectedVoiceId} onValueChange={setSelectedVoiceId}>
+                    <Select value={effectiveVoiceId} onValueChange={setSelectedVoiceId}>
                       <SelectTrigger className="w-full bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-800 dark:text-zinc-200 font-semibold focus:border-violet-300">
                         <SelectValue placeholder="Select a voice model" />
                       </SelectTrigger>
@@ -328,7 +323,7 @@ export default function TextToSpeechPage() {
                 {/* Voice Tone Selection */}
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-zinc-500 dark:text-zinc-400">Voice Tone</label>
-                  <Select value={tone} onValueChange={setTone}>
+                  <Select value={tone} onValueChange={handleToneChange}>
                     <SelectTrigger className="w-full bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-violet-500/20 text-left text-zinc-800 dark:text-zinc-200 font-semibold focus:border-violet-300">
                       <SelectValue placeholder="Select Tone" />
                     </SelectTrigger>
@@ -496,7 +491,7 @@ export default function TextToSpeechPage() {
           </div>
         ) : generations && generations.length > 0 ? (
           <div className="grid gap-3 w-full min-w-0">
-            {generations.map((gen: any) => {
+            {generations.map((gen) => {
               const audioUrl = getAudioUrl(gen.r2Key);
               const langDetails = getLanguageDetails(gen.targetLang || "en");
               return (
@@ -509,7 +504,7 @@ export default function TextToSpeechPage() {
                       <Volume2 className="h-4.5 w-4.5" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold truncate text-zinc-800 dark:text-zinc-200">"{gen.text}"</p>
+                      <p className="text-sm font-bold truncate text-zinc-800 dark:text-zinc-200">&ldquo;{gen.text}&rdquo;</p>
                       <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] text-zinc-500 dark:text-zinc-400 font-bold mt-0.5">
                         <span className="text-zinc-650 dark:text-zinc-300 font-bold">Voice: {gen.voice?.name || "Deleted"}</span>
                         <span>•</span>

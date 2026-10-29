@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { UserButton, useUser, useClerk } from "@clerk/nextjs";
 import { trpc } from "@/lib/trpc";
 import { useTheme } from "next-themes";
@@ -23,23 +23,20 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import ProUpgradeModal from "@/components/ProUpgradeModal";
 
+const emptySubscribe = () => () => {};
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const { isLoaded, isSignedIn } = useUser();
   const { openUserProfile, signOut } = useClerk();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");
