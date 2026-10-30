@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function auth() {
   return {
@@ -17,19 +17,26 @@ export async function currentUser() {
   };
 }
 
-export const clerkMiddleware = (handler?: any) => {
-  return async (req: any, event: any) => {
+type MiddlewareHandler = (
+  auth: { protect: () => Promise<{ userId: string }>; userId: string },
+  req: NextRequest,
+  event: unknown
+) => Promise<NextResponse | Response | void> | NextResponse | Response | void;
+
+export const clerkMiddleware = (handler?: MiddlewareHandler) => {
+  return async (req: NextRequest, event: unknown) => {
     const mockAuth = {
       protect: async () => ({ userId: "mock_user_123" }),
       userId: "mock_user_123",
     };
     if (typeof handler === "function") {
-      return handler(mockAuth, req, event);
+      const result = await handler(mockAuth, req, event);
+      if (result) return result;
     }
     return NextResponse.next();
   };
 };
 
-export const createRouteMatcher = (patterns: string[] = []) => {
-  return (req: any) => false;
+export const createRouteMatcher = () => {
+  return () => false;
 };

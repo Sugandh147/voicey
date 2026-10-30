@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const isDummyClerk =
   !process.env.CLERK_SECRET_KEY ||

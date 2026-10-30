@@ -1,12 +1,13 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 export function ClerkProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export function UserButton({ appearance }: { appearance?: any }) {
+export function UserButton() {
   return (
     <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-gradient-to-tr from-violet-600 to-fuchsia-600 text-white shadow-xs font-bold text-xs select-none">
       LC
@@ -47,12 +48,12 @@ export function SignIn() {
     <div className="p-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl shadow-lg max-w-sm w-full text-center space-y-4">
       <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Sign In (Mock Mode)</h2>
       <p className="text-zinc-500 text-sm">You are automatically authenticated as Local Creator in local development mode.</p>
-      <a
+      <Link
         href="/"
         className="inline-block w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold rounded-lg hover:from-violet-500 hover:to-fuchsia-500 transition-all text-sm"
       >
         Go to Dashboard
-      </a>
+      </Link>
     </div>
   );
 }
@@ -62,27 +63,27 @@ export function SignUp() {
     <div className="p-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl shadow-lg max-w-sm w-full text-center space-y-4">
       <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Sign Up (Mock Mode)</h2>
       <p className="text-zinc-500 text-sm">You are automatically authenticated as Local Creator in local development mode.</p>
-      <a
+      <Link
         href="/"
         className="inline-block w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold rounded-lg hover:from-violet-500 hover:to-fuchsia-500 transition-all text-sm"
       >
         Go to Dashboard
-      </a>
+      </Link>
     </div>
   );
 }
 
-export function OrganizationList(props: any) {
+export function OrganizationList() {
   return (
     <div className="p-8 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 rounded-xl shadow-lg max-w-sm w-full text-center space-y-4">
       <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Organization List (Mock Mode)</h2>
       <p className="text-zinc-500 text-sm">Organizations are bypassed in local development mode.</p>
-      <a
+      <Link
         href="/"
         className="inline-block w-full py-2.5 bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-semibold rounded-lg hover:from-violet-500 hover:to-fuchsia-500 transition-all text-sm"
       >
         Go to Dashboard
-      </a>
+      </Link>
     </div>
   );
 }
