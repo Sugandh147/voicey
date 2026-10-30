@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
           "@clerk/nextjs": "./src/lib/clerk-mock-client.tsx",
         },
       }
-    : undefined,
+    : {},
 };
 
 export default nextConfig;
